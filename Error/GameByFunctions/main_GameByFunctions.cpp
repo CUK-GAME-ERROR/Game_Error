@@ -4,6 +4,7 @@
 #include "GameFunc.h"
 #include "Intro.h"
 #include "Stage1.h"
+#include "Stage2.h"
 #include "Stage3.h"
 
 
@@ -29,15 +30,16 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 	
-	g_window = SDL_CreateWindow("First Window", 100, 100, 700, 800, 0);
+	g_window = SDL_CreateWindow("ERROR", 100, 100, 800, 700, 0);
 	g_renderer = SDL_CreateRenderer(g_window, -1, 0);
 
 	InitGame();
 	Init_Intro();
 	Init_Stage1();
+	Init_Stage2();
 	Init_Stage3();
 
-	g_current_game_phase = PHASE_STAGE3;
+	g_current_game_phase = PHASE_STAGE2;
 
 	g_last_time_ms = SDL_GetTicks();
 
@@ -53,11 +55,11 @@ int main(int argc, char* argv[])
 			Update_Intro();
 			Render_Intro();
 		}
-		else if ( g_current_game_phase == PHASE_STAGE1 )
+		else if ( g_current_game_phase == PHASE_STAGE2 )
 		{
-			HandleEvents_Stage1();
-			Update_Stage1();
-			Render_Stage1();
+			HandleEvents_Stage2();
+			Update_Stage2();
+			Render_Stage2();
 		}
 		else if ( g_current_game_phase == PHASE_STAGE3 )
 		{
@@ -72,6 +74,7 @@ int main(int argc, char* argv[])
 	
 	Clear_Intro();
 	Clear_Stage1();
+	Clear_Stage2();
 	Clear_Stage3();
 	ClearGame();
 
