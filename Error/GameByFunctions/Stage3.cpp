@@ -1,7 +1,25 @@
 #include "GameFunc.h"
 #include "Stage3.h"
+#include <vector>
+#include <list>
 
-int g_elapsed_time_ms;
+class Pos
+{
+public:
+	Pos() {
+		x = 0;
+		y = 0;
+	}
+
+	Pos(float _x, float _y) {
+		x = _x;
+		y = _y;
+	}
+
+	float x;
+	float y;
+};
+
 bool g_input[3] = { false, false, false };
 
 //player
@@ -19,13 +37,43 @@ SDL_Rect b_destination_rect;
 int ran;
 float ranPos_x[3] = { 500, 150, 400 };
 float ranPos_y[3] = { 600, 200, 350 };
+float attackCool_Down;
+SDL_Rect b_attackDown_destination;
 
+std::list<Pos> a_position;
+bool isDown;
+bool isTime;
+
+int ran_m[3] = { 0, 1, 2 };
+bool isChange; //발동 제한
+bool isRan; //랜덤 한번만 실행
+float changeCool; //바뀐 방향키 유지 쿨타임
+float randCool; //발동 쿨타임
+
+//timer
+int g_elapsed_time_ms;
+int g_last_time_ms;
+int c_last_time;
 
 void Init_Stage3()
 {
 	power = 100;
 	jumpSpeed = 20;
 	Power = power;
+	attackCool_Down = 2000;
+	randCool = 3000;
+	changeCool = 2000;
+
+	b_attackDown_destination.x = 51;
+	b_attackDown_destination.y = 184;
+	b_attackDown_destination.w = 50;
+	b_attackDown_destination.h = 50;
+
+	for (int i = 0; i < 4; i++) {
+		//std::cout << "x: " << b_attackDown_destination.x << " y: " << b_attackDown_destination.y << std::endl;
+		a_position.push_back(Pos(b_attackDown_destination.x, b_attackDown_destination.y));
+		b_attackDown_destination.x += 200;
+	}
 
 	g_flag_running = true;
 	g_elapsed_time_ms = 0;
@@ -40,7 +88,7 @@ void Init_Stage3()
 	g_source_rect.h = 416;
 
 	g_destination_rect.x = 150;
-	g_destination_rect.y = 600;
+	g_destination_rect.y = 550;
 	g_destination_rect.w = 50;
 	g_destination_rect.h = 100;
 
@@ -63,24 +111,28 @@ void HandleEvents_Stage3()
 			break;
 		case SDL_KEYDOWN:
 			if (event.key.keysym.sym == SDLK_LEFT) {
-				g_input[0] = true;
+				g_input[ran_m[0]] = true;
 			}
 			else if (event.key.keysym.sym == SDLK_RIGHT) {
-				g_input[1] = true;
+				g_input[ran_m[1]] = true;
 			}
 
 			if (event.key.keysym.sym == SDLK_SPACE) {
-				g_input[2] = true;
+				g_input[ran_m[2]] = true;
 			}
 
 			break;
 
 		case SDL_KEYUP:
 			if (event.key.keysym.sym == SDLK_LEFT) {
-				g_input[0] = false;
+				g_input[ran_m[0]] = false;
 			}
 			else if (event.key.keysym.sym == SDLK_RIGHT) {
-				g_input[1] = false;
+				g_input[ran_m[1]] = false;
+			}
+
+			if (event.key.keysym.sym == SDLK_SPACE) {
+				g_input[ran_m[2]] = false;
 			}
 
 			break;
@@ -88,8 +140,55 @@ void HandleEvents_Stage3()
 	}
 }
 
+void ranMove() {
+	isRan = true;
+	std::cout << "random!" << std::endl;
+	srand(time(NULL));
+
+	ran_m[0] = rand() % 3;
+	for (int k = 1; k < 3; k++) {
+		ran_m[k] = rand() % 3;
+
+		if (ran_m[k] == ran_m[k - 1]) {
+			continue;
+		}
+		else if (k == 2 && ran_m[k] == ran_m[k - 2]) {
+			continue;
+		}
+	}
+	std::cout << ran_m[0] << std::endl;
+	isRan = false;
+}
+
 void Update_Stage3()
 {
+	if (isDown) {
+		b_attackDown_destination.y += 10;
+	}
+	else if (!isDown) {
+		//std::cout << "isTime" << std::endl;
+		b_attackDown_destination.y = 184;
+		isTime = true;
+		g_last_time_ms = g_elapsed_time_ms;
+	}
+
+	if (isChange) {
+		if (g_elapsed_time_ms - c_last_time > randCool) {
+			isChange = false;
+		}
+
+		if (g_elapsed_time_ms - c_last_time > changeCool) {
+			for (int j = 0; j < 3; j++) {
+				ran_m[j] = j;
+			}
+		}
+	}
+	else if (!isChange && !isRan) {
+		isChange = true;
+		c_last_time = g_elapsed_time_ms;
+		ranMove();
+	}
+
 	if (g_input[0]) {
 		//std::cout << "Left" << std::endl;
 		g_destination_rect.x -= 10;
@@ -135,10 +234,10 @@ void Render_Stage3()
 		SDL_SetRenderDrawColor(g_renderer, 255, 255, 255, 255);
 
 		SDL_Rect backGround;
-		backGround.x = 50;
-		backGround.y = 100;
-		backGround.w = 600;
-		backGround.h = 650;
+		backGround.x = 34;
+		backGround.y = 167;
+		backGround.w = 733;
+		backGround.h = 500;
 
 		SDL_RenderFillRect(g_renderer, &backGround);
 	}
@@ -177,6 +276,26 @@ void Render_Stage3()
 		boss.h = b_destination_rect.h;
 
 		SDL_RenderFillRect(g_renderer, &boss);
+	}
+
+	if (isTime) {
+		isDown = true;
+
+		if (b_attackDown_destination.y < 600) {
+			SDL_SetRenderDrawColor(g_renderer, 188, 229, 92, 255);
+
+			for (auto iter = a_position.begin(); iter != a_position.end(); iter++) {
+				b_attackDown_destination.x = iter->x;
+				//b_attackDown_destination.y = iter->y;
+				SDL_RenderFillRect(g_renderer, &b_attackDown_destination);
+			}
+		}
+
+		//std::cout << "Time: " << g_elapsed_time_ms - g_last_time_ms << std::endl;
+		if (g_elapsed_time_ms - g_last_time_ms > attackCool_Down) {
+			//std::cout << "CoolTime" << std::endl;
+			isDown = false;
+		}
 	}
 
 	//Player
