@@ -3,7 +3,6 @@
 
 void Init_Intro()
 {
-
 }
 
 void Update_Intro()

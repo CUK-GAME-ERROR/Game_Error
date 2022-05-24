@@ -13,10 +13,6 @@ void Update_Stage1()
 
 void Render_Stage1()
 {
-	SDL_SetRenderDrawColor(g_renderer, 255, 255, 255, 255);
-	SDL_RenderClear(g_renderer); // clear the renderer to the draw color
-
-	SDL_RenderPresent(g_renderer); // draw to the screen
 }
 
 

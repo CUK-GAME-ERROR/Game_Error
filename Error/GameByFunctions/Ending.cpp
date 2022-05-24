@@ -6,8 +6,6 @@
 
 void Init_Ending()
 {
-
-
 }
 
 void Update_Ending()
@@ -17,11 +15,6 @@ void Update_Ending()
 
 void Render_Ending()
 {
-	SDL_SetRenderDrawColor(g_renderer, 255, 255, 255, 255);
-	SDL_RenderClear(g_renderer); // clear the renderer to the draw color
-
-
-	SDL_RenderPresent(g_renderer); // draw to the screen
 }
 
 

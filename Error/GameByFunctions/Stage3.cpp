@@ -143,7 +143,7 @@ void HandleEvents_Stage3()
 			// If the mouse left button is pressed. 
 			if (event.button.button == SDL_BUTTON_LEFT)
 			{
-				g_current_game_phase = PHASE_ENDING;
+				g_current_game_phase = PHASE_STAGE2;
 			}
 			break;
 
