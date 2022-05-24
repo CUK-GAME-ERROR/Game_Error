@@ -6,6 +6,7 @@
 #include "Stage1.h"
 #include "Stage2.h"
 #include "Stage3.h"
+#include "Ending.h"
 
 
 
@@ -38,6 +39,7 @@ int main(int argc, char* argv[])
 	Init_Stage1();
 	Init_Stage2();
 	Init_Stage3();
+	Init_Ending();
 
 	g_current_game_phase = PHASE_STAGE2;
 
@@ -55,6 +57,12 @@ int main(int argc, char* argv[])
 			Update_Intro();
 			Render_Intro();
 		}
+		else if (g_current_game_phase == PHASE_STAGE1)
+		{
+			HandleEvents_Stage1();
+			Update_Stage1();
+			Render_Stage1();
+		}
 		else if ( g_current_game_phase == PHASE_STAGE2 )
 		{
 			HandleEvents_Stage2();
@@ -67,6 +75,12 @@ int main(int argc, char* argv[])
 			Update_Stage3();
 			Render_Stage3();
 		}
+		else if (g_current_game_phase == PHASE_ENDING)
+		{
+			HandleEvents_Ending();
+			Update_Ending();
+			Render_Ending();
+		}
 
 		g_last_time_ms = cur_time_ms;
 
@@ -76,6 +90,7 @@ int main(int argc, char* argv[])
 	Clear_Stage1();
 	Clear_Stage2();
 	Clear_Stage3();
+	Clear_Ending();
 	ClearGame();
 
 	SDL_DestroyRenderer(g_renderer);

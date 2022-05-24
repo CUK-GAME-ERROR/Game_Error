@@ -136,6 +136,19 @@ void HandleEvents_Stage3()
 			}
 
 			break;
+
+
+		case SDL_MOUSEBUTTONDOWN:
+
+			// If the mouse left button is pressed. 
+			if (event.button.button == SDL_BUTTON_LEFT)
+			{
+				g_current_game_phase = PHASE_ENDING;
+			}
+			break;
+
+		default:
+			break;
 		}
 	}
 }

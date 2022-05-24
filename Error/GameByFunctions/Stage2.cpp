@@ -28,7 +28,7 @@ static SDL_Rect g_destination_rectangle_player;
 
 static SDL_Texture* g_texture_ladder;
 static SDL_Rect g_source_rectangle_ladder;
-static SDL_Rect g_destination_rectangle_ladder;
+static SDL_Rect g_destination_rectangle_ladder[4];
 
 static bool g_player_go_left;
 static bool g_player_go_right;
@@ -80,6 +80,7 @@ void Init_Map()
 }
 
 
+
 void Init_Stage2()
 {
 	// map
@@ -111,18 +112,22 @@ void Init_Stage2()
 	SDL_QueryTexture(g_texture_ladder, NULL, NULL, &g_source_rectangle_ladder.w, &g_source_rectangle_ladder.h);
 	g_source_rectangle_ladder.x = 0;
 	g_source_rectangle_ladder.y = 0;
-	g_destination_rectangle_ladder.x = IndextoX(656);
-	g_destination_rectangle_ladder.y = IndextoY(560);
-	g_destination_rectangle_ladder.w = g_source_rectangle_ladder.w;
-	g_destination_rectangle_ladder.h = g_source_rectangle_ladder.h;
+	g_destination_rectangle_ladder[0] = { IndextoX(656), IndextoY(560), g_source_rectangle_ladder.w, g_source_rectangle_ladder.h };
+	g_destination_rectangle_ladder[1] = { IndextoX(541), IndextoY(445), g_source_rectangle_ladder.w, g_source_rectangle_ladder.h };
+	g_destination_rectangle_ladder[2] = { IndextoX(395), IndextoY(299), g_source_rectangle_ladder.w, g_source_rectangle_ladder.h };
+	g_destination_rectangle_ladder[3] = { IndextoX(279), IndextoY(183), g_source_rectangle_ladder.w, g_source_rectangle_ladder.h };
+
 }
 
 void Update_Stage2()
 {
 	if (g_player_go_left)
 	{
-		if (g_destination_rectangle_player.y == IndextoY(702) - g_source_rectangle_player.h &&
-			g_destination_rectangle_player.x > IndextoX(641))
+		if ((g_destination_rectangle_player.y == IndextoY(702) - g_source_rectangle_player.h && g_destination_rectangle_player.x > IndextoX(641)) ||
+			(g_destination_rectangle_player.y == IndextoY(574) - g_source_rectangle_player.h && g_destination_rectangle_player.x > IndextoX(513)) ||
+			(g_destination_rectangle_player.y == IndextoY(446) - g_source_rectangle_player.h && g_destination_rectangle_player.x > IndextoX(385)) ||
+			(g_destination_rectangle_player.y == IndextoY(318) - g_source_rectangle_player.h && g_destination_rectangle_player.x > IndextoX(257)) ||
+			(g_destination_rectangle_player.y == IndextoY(190) - g_source_rectangle_player.h && g_destination_rectangle_player.x > IndextoX(129)))
 		{
 			g_destination_rectangle_player.x -= 5;
 			std::cout << g_destination_rectangle_player.x << std::endl;
@@ -131,8 +136,11 @@ void Update_Stage2()
 
 	if (g_player_go_right)
 	{
-		if (g_destination_rectangle_player.y == IndextoY(702) - g_source_rectangle_player.h &&
-			g_destination_rectangle_player.x < IndextoX(670))
+		if ((g_destination_rectangle_player.y == IndextoY(702) - g_source_rectangle_player.h && g_destination_rectangle_player.x < IndextoX(670)) ||
+			(g_destination_rectangle_player.y == IndextoY(574) - g_source_rectangle_player.h && g_destination_rectangle_player.x < IndextoX(542)) ||
+			(g_destination_rectangle_player.y == IndextoY(446) - g_source_rectangle_player.h && g_destination_rectangle_player.x < IndextoX(414)) ||
+			(g_destination_rectangle_player.y == IndextoY(318) - g_source_rectangle_player.h && g_destination_rectangle_player.x < IndextoX(286)) ||
+			(g_destination_rectangle_player.y == IndextoY(190) - g_source_rectangle_player.h && g_destination_rectangle_player.x < IndextoX(158)))
 		{
 			g_destination_rectangle_player.x += 5;
 			std::cout << g_destination_rectangle_player.x << std::endl;
@@ -141,10 +149,14 @@ void Update_Stage2()
 
 	if (g_player_go_up)
 	{
-		if (g_destination_rectangle_player.x >= IndextoX(656) - 10 &&
-			g_destination_rectangle_player.x <= IndextoX(656) + 10 &&
-			g_destination_rectangle_player.y > IndextoY(560) - g_source_rectangle_player.h &&
-			g_destination_rectangle_player.y <= IndextoY(702) - g_source_rectangle_player.h)
+		if ((g_destination_rectangle_player.x >= g_destination_rectangle_ladder[0].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[0].x + 5 &&
+			g_destination_rectangle_player.y > g_destination_rectangle_ladder[0].y - g_source_rectangle_player.h && g_destination_rectangle_player.y <= IndextoY(688) - g_source_rectangle_player.h) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[1].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[1].x + 5 &&
+				g_destination_rectangle_player.y > g_destination_rectangle_ladder[1].y - g_source_rectangle_player.h && g_destination_rectangle_player.y <= IndextoY(573) - g_source_rectangle_player.h) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[2].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[2].x + 5 &&
+				g_destination_rectangle_player.y > g_destination_rectangle_ladder[2].y - g_source_rectangle_player.h && g_destination_rectangle_player.y <= IndextoY(427) - g_source_rectangle_player.h) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[3].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[3].x + 5 &&
+				g_destination_rectangle_player.y > g_destination_rectangle_ladder[3].y - g_source_rectangle_player.h && g_destination_rectangle_player.y <= IndextoY(311) - g_source_rectangle_player.h))
 		{
 			g_destination_rectangle_player.y -= 5;
 			std::cout << g_destination_rectangle_player.y << std::endl;
@@ -153,10 +165,14 @@ void Update_Stage2()
 
 	if (g_player_go_down)
 	{
-		if (g_destination_rectangle_player.x >= IndextoX(656) - 10 &&
-			g_destination_rectangle_player.x <= IndextoX(656) + 10 &&
-			g_destination_rectangle_player.y >= IndextoY(560) - g_source_rectangle_player.h &&
-			g_destination_rectangle_player.y < IndextoY(702) - g_source_rectangle_player.h)
+		if ((g_destination_rectangle_player.x >= g_destination_rectangle_ladder[0].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[0].x + 5 &&
+			g_destination_rectangle_player.y >= g_destination_rectangle_ladder[0].y - g_source_rectangle_player.h && g_destination_rectangle_player.y < IndextoY(688) - g_source_rectangle_player.h) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[1].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[1].x + 5 &&
+				g_destination_rectangle_player.y >= g_destination_rectangle_ladder[1].y - g_source_rectangle_player.h && g_destination_rectangle_player.y < IndextoY(573) - g_source_rectangle_player.h) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[2].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[2].x + 5 &&
+				g_destination_rectangle_player.y >= g_destination_rectangle_ladder[2].y - g_source_rectangle_player.h && g_destination_rectangle_player.y < IndextoY(427) - g_source_rectangle_player.h) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[3].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[3].x + 5 &&
+				g_destination_rectangle_player.y >= g_destination_rectangle_ladder[3].y - g_source_rectangle_player.h && g_destination_rectangle_player.y < IndextoY(311) - g_source_rectangle_player.h))
 		{
 			g_destination_rectangle_player.y += 5;
 			std::cout << g_destination_rectangle_player.y << std::endl;
@@ -182,7 +198,9 @@ void Render_Stage2()
 	}
 
 	// ladder
-	SDL_RenderCopy(g_renderer, g_texture_ladder, &g_source_rectangle_ladder, &g_destination_rectangle_ladder);
+	for (int i = 0; i < 4; i++) {
+		SDL_RenderCopy(g_renderer, g_texture_ladder, &g_source_rectangle_ladder, &g_destination_rectangle_ladder[i]);
+	}
 
 	// player
 	SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player, &g_destination_rectangle_player);
@@ -240,6 +258,15 @@ void HandleEvents_Stage2()
 			if (event.key.keysym.sym == SDLK_DOWN)
 			{
 				g_player_go_down = false;
+			}
+			break;
+
+		case SDL_MOUSEBUTTONDOWN:
+
+			// If the mouse left button is pressed. 
+			if (event.button.button == SDL_BUTTON_LEFT)
+			{
+				g_current_game_phase = PHASE_STAGE3;
 			}
 			break;
 
