@@ -22,7 +22,7 @@ public:
 
 static std::vector<Pos> map;
 
-static SDL_Texture* g_texture_player;
+static SDL_Texture* g_texture_player[6];
 static SDL_Rect g_source_rectangle_player;
 static SDL_Rect g_destination_rectangle_player;
 
@@ -30,10 +30,26 @@ static SDL_Texture* g_texture_ladder;
 static SDL_Rect g_source_rectangle_ladder;
 static SDL_Rect g_destination_rectangle_ladder[4];
 
+static int g_player_head; // 0:right, 1:left
+static int g_flag; // 1~10, 11~20
 static bool g_player_go_left;
 static bool g_player_go_right;
 static bool g_player_go_up;
 static bool g_player_go_down;
+
+static SDL_Texture* g_texture_timer;
+static SDL_Rect g_source_rectangle_timer;
+static SDL_Rect g_destination_rectangle_timer;
+
+static SDL_Texture* g_texture_timeW;
+static SDL_Rect g_source_rectangle_timeW;
+static SDL_Rect g_destination_rectangle_timeW;
+
+static SDL_Texture* g_texture_timeG;
+static SDL_Rect g_source_rectangle_timeG;
+static SDL_Rect g_destination_rectangle_timeG;
+static int g_time;
+static int time_ms_;
 
 int IndextoX(int i)
 {
@@ -87,11 +103,27 @@ void Init_Stage2()
 	Init_Map();
 
 	// player
-	SDL_Surface* player_surface = IMG_Load("../../Resources/player_stop_left.png");
-	g_texture_player = SDL_CreateTextureFromSurface(g_renderer, player_surface);
+	SDL_Surface* player_surface = IMG_Load("../../Resources/player_stop_right.png");
+	g_texture_player[0] = SDL_CreateTextureFromSurface(g_renderer, player_surface);
+
+	player_surface = IMG_Load("../../Resources/player_stop_left.png");
+	g_texture_player[1] = SDL_CreateTextureFromSurface(g_renderer, player_surface);
+
+	player_surface = IMG_Load("../../Resources/player_move_right1.png");
+	g_texture_player[2] = SDL_CreateTextureFromSurface(g_renderer, player_surface);
+
+	player_surface = IMG_Load("../../Resources/player_move_right2.png");
+	g_texture_player[3] = SDL_CreateTextureFromSurface(g_renderer, player_surface);
+
+	player_surface = IMG_Load("../../Resources/player_move_left1.png");
+	g_texture_player[4] = SDL_CreateTextureFromSurface(g_renderer, player_surface);
+
+	player_surface = IMG_Load("../../Resources/player_move_left2.png");
+	g_texture_player[5] = SDL_CreateTextureFromSurface(g_renderer, player_surface);
+
 	SDL_FreeSurface(player_surface);
 
-	SDL_QueryTexture(g_texture_player, NULL, NULL, &g_source_rectangle_player.w, &g_source_rectangle_player.h);
+	SDL_QueryTexture(g_texture_player[0], NULL, NULL, &g_source_rectangle_player.w, &g_source_rectangle_player.h);
 	g_source_rectangle_player.x = 0;
 	g_source_rectangle_player.y = 0;
 	g_destination_rectangle_player.x = IndextoX(670);
@@ -103,6 +135,8 @@ void Init_Stage2()
 	g_player_go_right = false;
 	g_player_go_up = false;
 	g_player_go_down = false;
+	g_player_head = 1;
+	g_flag = 1;
 
 	// ladder
 	SDL_Surface* lader_surface = IMG_Load("../../Resources/ladder25.png");
@@ -117,6 +151,45 @@ void Init_Stage2()
 	g_destination_rectangle_ladder[2] = { IndextoX(395), IndextoY(299), g_source_rectangle_ladder.w, g_source_rectangle_ladder.h };
 	g_destination_rectangle_ladder[3] = { IndextoX(279), IndextoY(183), g_source_rectangle_ladder.w, g_source_rectangle_ladder.h };
 
+	// time
+	g_time = 60000;
+	time_ms_ = 0;
+
+	SDL_Surface* timeW_surface = IMG_Load("../../Resources/time_white.png");
+	g_texture_timeW = SDL_CreateTextureFromSurface(g_renderer, timeW_surface);
+	SDL_FreeSurface(timeW_surface);
+
+	SDL_QueryTexture(g_texture_timeW, NULL, NULL, &g_source_rectangle_timeW.w, &g_source_rectangle_timeW.h);
+	g_source_rectangle_timeW.x = 0;
+	g_source_rectangle_timeW.y = 0;
+	g_destination_rectangle_timeW.x = 25;
+	g_destination_rectangle_timeW.y = 25;
+	g_destination_rectangle_timeW.w = 750;
+	g_destination_rectangle_timeW.h = 25;
+
+	SDL_Surface* timeG_surface = IMG_Load("../../Resources/time_green.png");
+	g_texture_timeG = SDL_CreateTextureFromSurface(g_renderer, timeG_surface);
+	SDL_FreeSurface(timeG_surface);
+
+	SDL_QueryTexture(g_texture_timeG, NULL, NULL, &g_source_rectangle_timeG.w, &g_source_rectangle_timeG.h);
+	g_source_rectangle_timeG.x = 0;
+	g_source_rectangle_timeG.y = 0;
+	g_destination_rectangle_timeG.x = 25;
+	g_destination_rectangle_timeG.y = 25;
+	g_destination_rectangle_timeG.w = g_time * 0.0125;
+	g_destination_rectangle_timeG.h = 25;
+
+	SDL_Surface* timer_surface = IMG_Load("../../Resources/timer.png");
+	g_texture_timer = SDL_CreateTextureFromSurface(g_renderer, timer_surface);
+	SDL_FreeSurface(timer_surface);
+
+	SDL_QueryTexture(g_texture_timer, NULL, NULL, &g_source_rectangle_timer.w, &g_source_rectangle_timer.h);
+	g_source_rectangle_timer.x = 0;
+	g_source_rectangle_timer.y = 0;
+	g_destination_rectangle_timer.x = 25;
+	g_destination_rectangle_timer.y = 0;
+	g_destination_rectangle_timer.w = 50;
+	g_destination_rectangle_timer.h = 50;
 }
 
 void Update_Stage2()
@@ -203,8 +276,47 @@ void Render_Stage2()
 	}
 
 	// player
-	SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player, &g_destination_rectangle_player);
+	if (g_player_go_right) {
+		if (g_flag <= 10) {
+			SDL_RenderCopy(g_renderer, g_texture_player[2], &g_source_rectangle_player, &g_destination_rectangle_player);
+			g_flag++;
+		}
+		else {
+			SDL_RenderCopy(g_renderer, g_texture_player[3], &g_source_rectangle_player, &g_destination_rectangle_player);
+			g_flag++;
+			if (g_flag > 20)
+				g_flag = 1;
+		}
+	}
+	else if (g_player_go_left) {
+		if (g_flag <= 10) {
+			SDL_RenderCopy(g_renderer, g_texture_player[4], &g_source_rectangle_player, &g_destination_rectangle_player);
+			g_flag++;
+		}
+		else {
+			SDL_RenderCopy(g_renderer, g_texture_player[5], &g_source_rectangle_player, &g_destination_rectangle_player);
+			g_flag++;
+			if (g_flag > 20)
+				g_flag = 1;
+		}
+	}
+	else if (g_player_head == 0)
+		SDL_RenderCopy(g_renderer, g_texture_player[0], &g_source_rectangle_player, &g_destination_rectangle_player);
+	else if (g_player_head == 1)
+		SDL_RenderCopy(g_renderer, g_texture_player[1], &g_source_rectangle_player, &g_destination_rectangle_player);
 
+	// timer
+	static Uint32 last_ticks = SDL_GetTicks();
+	Uint32 current_ticks = SDL_GetTicks();
+
+	time_ms_ += current_ticks - last_ticks;
+	last_ticks = current_ticks;
+
+	g_destination_rectangle_timeG.w = (g_time - time_ms_) * 0.0125;
+
+	SDL_RenderCopy(g_renderer, g_texture_timeW, &g_source_rectangle_timeW, &g_destination_rectangle_timeW);
+	SDL_RenderCopy(g_renderer, g_texture_timeG, &g_source_rectangle_timeG, &g_destination_rectangle_timeG);
+	SDL_RenderCopy(g_renderer, g_texture_timer, &g_source_rectangle_timer, &g_destination_rectangle_timer);
 
 	SDL_RenderPresent(g_renderer);
 }
@@ -227,10 +339,12 @@ void HandleEvents_Stage2()
 			if (event.key.keysym.sym == SDLK_LEFT)
 			{
 				g_player_go_left = true;
+				g_player_head = 1;
 			}
 			else if (event.key.keysym.sym == SDLK_RIGHT)
 			{
 				g_player_go_right = true;
+				g_player_head = 0;
 			}
 			else if (event.key.keysym.sym == SDLK_UP)
 			{
@@ -246,10 +360,12 @@ void HandleEvents_Stage2()
 			if (event.key.keysym.sym == SDLK_LEFT)
 			{
 				g_player_go_left = false;
+				g_flag = 1;
 			}
 			if (event.key.keysym.sym == SDLK_RIGHT)
 			{
 				g_player_go_right = false;
+				g_flag = 1;
 			}
 			if (event.key.keysym.sym == SDLK_UP)
 			{
@@ -280,7 +396,11 @@ void HandleEvents_Stage2()
 
 void Clear_Stage2()
 {
-	SDL_DestroyTexture(g_texture_player);
+	for (int i = 0; i < 6; i++)
+		SDL_DestroyTexture(g_texture_player[i]);
 	SDL_DestroyTexture(g_texture_ladder);
+	SDL_DestroyTexture(g_texture_timeW);
+	SDL_DestroyTexture(g_texture_timeG);
+	SDL_DestroyTexture(g_texture_timer);
 }
 
