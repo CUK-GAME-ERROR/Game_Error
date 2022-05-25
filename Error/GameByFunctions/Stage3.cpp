@@ -20,6 +20,47 @@ public:
 	float y;
 };
 
+class Monster {
+public:
+	Pos pos;
+	Pos init_pos;
+	float move_destination;
+	bool isRight;
+
+	Monster() {
+		init_pos.x = 0;
+		init_pos.y = 0;
+		pos.x = 0;
+		pos.y = 0;
+		move_destination = 0;
+	}
+
+	Monster(Pos p, float move, bool right) {
+		pos = p;
+		init_pos = p;
+		move_destination = move;
+		isRight = right;
+	}
+
+	void Move() {
+		if (isRight) {
+			if (pos.x < init_pos.x + move_destination) {
+				pos.x += 5;
+			}
+			else
+				isRight = false;
+		}
+		else {
+			if (pos.x > init_pos.x - move_destination) {
+				pos.x -= 5;
+			}
+			else {
+				isRight = true;
+			}
+		}
+	}
+};
+
 bool g_input[3] = { false, false, false };
 
 //player
@@ -55,6 +96,13 @@ int g_elapsed_time_ms;
 int g_last_time_ms;
 int c_last_time;
 
+//monster
+int monsterNum = 3;
+std::list<Monster> sub_M;
+std::vector<Pos> monster_Pos;
+float movement[3] = { 100, 50, 30 };
+bool direction[3] = { true, false, true };
+
 void Init_Stage3()
 {
 	power = 100;
@@ -75,6 +123,15 @@ void Init_Stage3()
 		b_attackDown_destination.x += 200;
 	}
 
+	//sub_monster
+	monster_Pos.push_back(Pos(150, 300));
+	monster_Pos.push_back(Pos(200, 350));
+	monster_Pos.push_back(Pos(150, 400));
+
+	for (int k = 0; k < monsterNum; k++) {
+		sub_M.push_back(Monster(monster_Pos[k], movement[k], direction[k]));
+	}
+
 	g_flag_running = true;
 	g_elapsed_time_ms = 0;
 
@@ -82,12 +139,14 @@ void Init_Stage3()
 	g_player_sheet_texture = SDL_CreateTextureFromSurface(g_renderer, player_sheet_surface);
 	SDL_FreeSurface(player_sheet_surface);
 
+	//SDL_QueryTexture(g_player_sheet_texture, NULL, NULL, &g_source_rect.w, &g_source_rect.h);
+
 	g_source_rect.x = 63;
 	g_source_rect.y = 41;
 	g_source_rect.w = 374;
 	g_source_rect.h = 416;
 
-	g_destination_rect.x = 150;
+	g_destination_rect.x = 300;
 	g_destination_rect.y = 550;
 	g_destination_rect.w = 50;
 	g_destination_rect.h = 100;
@@ -233,6 +292,10 @@ void Update_Stage3()
 	b_destination_rect.x = ranPos_x[ran];
 	b_destination_rect.y = ranPos_y[ran];
 
+	for (auto iter = sub_M.begin(); iter != sub_M.end(); iter++) {
+		iter->Move();
+	}
+
 	g_elapsed_time_ms += 33;
 }
 
@@ -289,6 +352,18 @@ void Render_Stage3()
 		boss.h = b_destination_rect.h;
 
 		SDL_RenderFillRect(g_renderer, &boss);
+	}
+
+	SDL_SetRenderDrawColor(g_renderer, 188, 229, 92, 255);
+	SDL_Rect monster;
+
+	for (auto iter = sub_M.begin(); iter != sub_M.end(); iter++) {
+		monster.x = iter->pos.x;
+		monster.y = iter->pos.y;
+		monster.w = 30;
+		monster.h = 30;
+
+		SDL_RenderFillRect(g_renderer, &monster);
 	}
 
 	if (isTime) {
