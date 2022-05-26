@@ -6,15 +6,17 @@ bool g_input[3] = { false, false, false };
 
 //player
 SDL_Texture* g_player_sheet_texture;
-SDL_Rect g_source_rect;
-SDL_Rect g_destination_rect;
+SDL_Rect g_source_rectangle_player;
+SDL_Rect g_destination_rectangle_player;
 
 float power;
 float Power;
 float jumpSpeed;
 bool isJump;
+int hp = 3;
 
 //boss
+int hp_B = 5;
 SDL_Rect b_destination_rect;
 int ran;
 float ranPos_x[3] = { 500, 150, 400 };
@@ -25,7 +27,9 @@ SDL_Rect b_attackDown_destination;
 std::list<Pos> a_position;
 bool isDown;
 bool isTime;
+bool isMove;
 
+//player 조작법
 int ran_m[3] = { 0, 1, 2 };
 bool isChange; //발동 제한
 bool isRan; //랜덤 한번만 실행
@@ -44,17 +48,26 @@ std::vector<Pos> monster_Pos;
 float movement[3] = { 100, 50, 30 };
 bool direction[3] = { true, false, true };
 
+//map
+static std::vector<Pos> map_stage3;
+
+//player 공격
+std::list<Pos> c_state[3];
+bool c_direction;
+
 void Init_Stage3()
 {
 	//map
-	//Init_Map();
+	map_stage3 = Init_Map();
 
 	power = 100;
 	jumpSpeed = 20;
 	Power = power;
 	attackCool_Down = 2000;
-	randCool = 3000;
+	randCool = 10000;
 	changeCool = 2000;
+
+	hp = 3;
 
 	b_attackDown_destination.x = 51;
 	b_attackDown_destination.y = 184;
@@ -83,22 +96,19 @@ void Init_Stage3()
 	g_player_sheet_texture = SDL_CreateTextureFromSurface(g_renderer, player_sheet_surface);
 	SDL_FreeSurface(player_sheet_surface);
 
-	//SDL_QueryTexture(g_player_sheet_texture, NULL, NULL, &g_source_rect.w, &g_source_rect.h);
+	SDL_QueryTexture(g_player_sheet_texture, NULL, NULL, &g_source_rectangle_player.w, &g_source_rectangle_player.h);
 
-	g_source_rect.x = 0;
-	g_source_rect.y = 0;
-	g_source_rect.w = 25;
-	g_source_rect.h = 31;
+	g_source_rectangle_player.x = 0;
+	g_source_rectangle_player.y = 0;
+	g_destination_rectangle_player.x = IndextoX(670);
+	g_destination_rectangle_player.y = IndextoY(702) - g_source_rectangle_player.h;
+	g_destination_rectangle_player.w = g_source_rectangle_player.w;
+	g_destination_rectangle_player.h = g_source_rectangle_player.h;
 
-	g_destination_rect.x = 300;
-	g_destination_rect.y = 550;
-	g_destination_rect.w = g_source_rect.w;
-	g_destination_rect.h = g_source_rect.h;
-
-	b_destination_rect.x = 500;
-	b_destination_rect.y = 600;
-	b_destination_rect.w = 100;
-	b_destination_rect.h = 100;
+	b_destination_rect.x = 50;
+	b_destination_rect.y = 200;
+	b_destination_rect.w = 50;
+	b_destination_rect.h = 50;
 }
 
 
@@ -114,14 +124,19 @@ void HandleEvents_Stage3()
 			break;
 		case SDL_KEYDOWN:
 			if (event.key.keysym.sym == SDLK_LEFT) {
+				c_direction = true;
 				g_input[ran_m[0]] = true;
 			}
 			else if (event.key.keysym.sym == SDLK_RIGHT) {
+				c_direction = false;
 				g_input[ran_m[1]] = true;
 			}
 
 			if (event.key.keysym.sym == SDLK_SPACE) {
-				g_input[ran_m[2]] = true;
+				g_input[2] = true;
+			}
+			if (event.key.keysym.sym == SDLK_z) {
+
 			}
 
 			break;
@@ -134,16 +149,11 @@ void HandleEvents_Stage3()
 				g_input[ran_m[1]] = false;
 			}
 
-			if (event.key.keysym.sym == SDLK_SPACE) {
-				g_input[ran_m[2]] = false;
-			}
-
 			break;
 
 
 		case SDL_MOUSEBUTTONDOWN:
-
-			// If the mouse left button is pressed. 
+			
 			if (event.button.button == SDL_BUTTON_LEFT)
 			{
 				g_current_game_phase = PHASE_STAGE2;
@@ -161,17 +171,11 @@ void ranMove() {
 	std::cout << "random!" << std::endl;
 	srand(time(NULL));
 
-	ran_m[0] = rand() % 3;
-	for (int k = 1; k < 3; k++) {
-		ran_m[k] = rand() % 3;
-
-		if (ran_m[k] == ran_m[k - 1]) {
-			continue;
-		}
-		else if (k == 2 && ran_m[k] == ran_m[k - 2]) {
-			continue;
-		}
+	ran_m[0] = rand() % 2;
+	while (ran_m[1] != ran_m[0]) {
+		ran_m[1] = rand() % 2;
 	}
+
 	std::cout << ran_m[0] << std::endl;
 	isRan = false;
 }
@@ -182,7 +186,6 @@ void Update_Stage3()
 		b_attackDown_destination.y += 10;
 	}
 	else if (!isDown) {
-		//std::cout << "isTime" << std::endl;
 		b_attackDown_destination.y = 184;
 		isTime = true;
 		g_last_time_ms = g_elapsed_time_ms;
@@ -206,18 +209,15 @@ void Update_Stage3()
 	}
 
 	if (g_input[0]) {
-		//std::cout << "Left" << std::endl;
-		g_destination_rect.x -= 10;
+		g_destination_rectangle_player.x -= 10;
 	}
 	else if (g_input[1]) {
-		//std::cout << "Right" << std::endl;
-		g_destination_rect.x += 10;
+		g_destination_rectangle_player.x += 10;
 	}
 
 	if (g_input[2]) {
 		if (power > 0) {
-			//std::cout << "UP" << std::endl;
-			g_destination_rect.y-= jumpSpeed;
+			g_destination_rectangle_player.y-= jumpSpeed;
 			power-= jumpSpeed;
 		}
 		else {
@@ -226,18 +226,25 @@ void Update_Stage3()
 				power = Power + 1;
 			}
 		    power-= jumpSpeed;
-			//std::cout << "Down" << std::endl;
-			g_destination_rect.y+= jumpSpeed;
+			g_destination_rectangle_player.y+= jumpSpeed;
 		}
 	}
 
 	srand(time(NULL));
-	ran = rand() % 3;
-	b_destination_rect.x = ranPos_x[ran];
-	b_destination_rect.y = ranPos_y[ran];
+	if (isMove) {
+		isMove = false;
+		ran = rand() % 3;
+		b_destination_rect.x = ranPos_x[ran];
+		b_destination_rect.y = ranPos_y[ran];
+	}
 
 	for (auto iter = sub_M.begin(); iter != sub_M.end(); iter++) {
 		iter->Move();
+	}
+
+	if (checkCollision(g_destination_rectangle_player, b_attackDown_destination)) {
+		hp--;
+		std::cout << hp << std::endl;
 	}
 
 	g_elapsed_time_ms += 33;
@@ -250,28 +257,29 @@ void Render_Stage3()
 	SDL_SetRenderDrawColor(g_renderer, 197, 224, 181, 255);
 	SDL_RenderClear(g_renderer);
 
-	/*SDL_Rect r;
-	r.w = r.h = 25;
-
 	// map
 	SDL_SetRenderDrawColor(g_renderer, 143, 170, 220, 255);
-	for (int i = 0; i < map.size(); i++) {
-		r.x = map[i].x;
-		r.y = map[i].y;
-		SDL_RenderFillRect(g_renderer, &r);
-	}*/
+	SDL_Rect r;
 
-	/*{
+	for (int i = 0; i < map_stage3.size(); i++) {
+		r.x = map_stage3[i].x;
+		r.y = map_stage3[i].y;
+		r.w = 25;
+		r.h = 25;
+		SDL_RenderFillRect(g_renderer, &r);
+	}
+
+	{
 		SDL_SetRenderDrawColor(g_renderer, 188, 229, 92, 255);
 
 		SDL_Rect player;
-		player.x = g_destination_rect.x;
-		player.y = g_destination_rect.y;
-		player.w = g_destination_rect.w;
-		player.h = g_destination_rect.h;
+		player.x = g_destination_rectangle_player.x;
+		player.y = g_destination_rectangle_player.y;
+		player.w = g_destination_rectangle_player.w;
+		player.h = g_destination_rectangle_player.h;
 
 		SDL_RenderFillRect(g_renderer, &player);
-	}*/
+	}
 
 	{
 		SDL_SetRenderDrawColor(g_renderer, 188, 229, 92, 255);
@@ -305,20 +313,17 @@ void Render_Stage3()
 
 			for (auto iter = a_position.begin(); iter != a_position.end(); iter++) {
 				b_attackDown_destination.x = iter->x;
-				//b_attackDown_destination.y = iter->y;
 				SDL_RenderFillRect(g_renderer, &b_attackDown_destination);
 			}
 		}
 
-		//std::cout << "Time: " << g_elapsed_time_ms - g_last_time_ms << std::endl;
 		if (g_elapsed_time_ms - g_last_time_ms > attackCool_Down) {
-			//std::cout << "CoolTime" << std::endl;
 			isDown = false;
 		}
 	}
 
 	//Player
-	SDL_RenderCopy(g_renderer, g_player_sheet_texture, &g_source_rect, &g_destination_rect);
+	//SDL_RenderCopy(g_renderer, g_player_sheet_texture, &g_source_rectangle_player, &g_destination_rectangle_player);
 
 	SDL_RenderPresent(g_renderer);
 }

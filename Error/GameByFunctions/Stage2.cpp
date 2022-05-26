@@ -1,9 +1,9 @@
 #include "GameFunc.h"
 #include "Stage2.h"
 #include <iostream>
-#include <vector>
+#include "player.h"
 
-class Pos
+/*class Pos
 {
 public:
 	Pos()
@@ -19,6 +19,7 @@ public:
 	int x;
 	int y;
 };
+*/
 
 static std::vector<Pos> map;
 
@@ -51,7 +52,7 @@ static SDL_Rect g_destination_rectangle_timeG;
 static int g_time;
 static int time_ms_;
 
-int IndextoX(int i)
+/*int IndextoX(int i)
 {
 	return (i % 32) * 25;
 }
@@ -94,13 +95,13 @@ void Init_Map()
 	for (int i = 568; i <= 574; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
 }
-
+*/
 
 
 void Init_Stage2()
 {
 	// map
-	Init_Map();
+	map = Init_Map();
 
 	// player
 	SDL_Surface* player_surface = IMG_Load("../../Resources/player_stop_right.png");

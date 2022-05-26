@@ -2,6 +2,9 @@
 #include <vector>
 #include <list>
 
+//player HP
+//extern int hp;
+
 class Pos
 {
 public:
@@ -60,3 +63,87 @@ public:
 		}
 	}
 };
+
+
+//extern std::vector<Pos> map;
+
+inline int IndextoX(int i)
+{
+	return (i % 32) * 25;
+}
+
+inline int IndextoY(int i)
+{
+	return (i / 32) * 25 + 125;
+}
+
+inline std::vector<Pos> Init_Map()
+{
+	static std::vector<Pos> map;
+
+	for (int i = 0; i <= 63; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 672; i <= 735; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 64; i <= 640; i += 32)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 95; i <= 671; i += 32)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 161; i <= 171; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 176; i <= 187; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 289; i <= 294; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 298; i <= 306; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 310; i <= 312; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 316; i <= 318; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 422; i <= 429; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 435; i <= 446; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 545; i <= 552; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 558; i <= 562; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 568; i <= 574; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+
+	return map;
+}
+
+inline bool checkCollision(SDL_Rect a, SDL_Rect b) {
+	int leftA, leftB;
+	int rightA, rightB;
+	int topA, topB;
+	int bottomA, bottomB;
+
+	leftA = a.x;
+	rightA = a.x + a.w;
+	topA = a.y;
+	bottomA = a.y + a.h;
+
+	leftB = b.x;
+	rightB = b.x + b.w;
+	topB = b.y;
+	bottomB = b.y + b.h;
+
+	if (bottomA <= topB) {
+		return false;
+	}
+	else if (topA >= bottomB) {
+		return false;
+	}
+	else if (rightA <= leftB) {
+		return false;
+	}
+	else if (leftA >= rightB) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
