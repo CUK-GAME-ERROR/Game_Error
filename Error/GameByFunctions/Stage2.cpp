@@ -3,24 +3,6 @@
 #include <iostream>
 #include "player.h"
 
-/*class Pos
-{
-public:
-	Pos()
-	{
-		x = 0;
-		y = 0;
-	}
-	Pos(int _x, int _y)
-	{
-		x = _x;
-		y = _y;
-	}
-	int x;
-	int y;
-};
-*/
-
 static std::vector<Pos> map;
 
 static SDL_Texture* g_texture_player;
@@ -35,6 +17,10 @@ static bool onladder;
 static int g_player_height;
 static int g_player_head; // 0:right, 1:left, 2: front
 static int g_flag; // 1~10, 11~20
+static float power;
+static float Power;
+static float jumpSpeed;
+static bool isJump;
 static bool g_player_go_left;
 static bool g_player_go_right;
 static bool g_player_go_up;
@@ -54,51 +40,27 @@ static SDL_Rect g_destination_rectangle_timeG;
 static int g_time;
 static int time_ms_;
 
-/*int IndextoX(int i)
-{
-	return (i % 32) * 25;
-}
+static int monsterANum = 4;
+static std::list<Monster> monsterA;
+static std::vector<Pos> monsterA_Pos;
+static float movementA[5] = { 100, 100, 125, 100 };
+static bool directionA[5] = { true, false, true, false };
+static int monsterBNum = 4;
+static std::list<Monster> monsterB;
+static std::vector<Pos> monsterB_Pos;
+static float movementB[4] = { 150, 50, 100, 125 };
+static bool directionB[4] = { true, true, true, true };
+static int g_monster_size;
+static SDL_Texture* g_texture_monster;
+static SDL_Rect g_source_rectangle_monster[4];
+static SDL_Rect g_destination_rectangle_monster;
 
-int IndextoY(int i)
-{
-	return (i / 32) * 25 + 125;
-}
-
-void Init_Map()
-{
-	for (int i = 0; i <= 63; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 672; i <= 735; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 64; i <= 640; i += 32)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 95; i <= 671; i += 32)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 161; i <= 171; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 176; i <= 187; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 289; i <= 294; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 298; i <= 306; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 310; i <= 312; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 316; i <= 318; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 422; i <= 429; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 435; i <= 446; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 545; i <= 552; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 558; i <= 562; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 568; i <= 574; i++)
-		map.push_back({ IndextoX(i), IndextoY(i) });
-}
-*/
-
+static SDL_Texture* g_texture_pointer;
+static SDL_Rect g_source_rectangle_pointer[2];
+static SDL_Rect g_destination_rectangle_pointer;
+static Pos pointer_Pos;
+static int pointer_head;
+static bool isShot;
 
 void Init_Stage2()
 {
@@ -122,6 +84,10 @@ void Init_Stage2()
 	g_player_go_right = false;
 	g_player_go_up = false;
 	g_player_go_down = false;
+	isJump = false;
+	power = 40;
+	jumpSpeed = 5;
+	Power = power;
 	g_player_head = 1;
 	g_flag = 1;
 
@@ -179,6 +145,41 @@ void Init_Stage2()
 	g_destination_rectangle_timer.y = 0;
 	g_destination_rectangle_timer.w = 50;
 	g_destination_rectangle_timer.h = 50;
+
+	// monster
+	SDL_Surface* monster_surface = IMG_Load("../../Resources/monster_spritesheet.png");
+	g_texture_monster = SDL_CreateTextureFromSurface(g_renderer, monster_surface);
+	SDL_FreeSurface(monster_surface);
+
+	for (int i = 0; i < 4; i++)
+		g_source_rectangle_monster[i] = { 25 * i, 0, 25, 25 };
+	g_monster_size = 25;
+
+	monsterA_Pos.push_back(Pos(IndextoX(549), IndextoY(549) - g_monster_size));
+	monsterA_Pos.push_back(Pos(IndextoX(426), IndextoY(426) - g_monster_size));
+	monsterA_Pos.push_back(Pos(IndextoX(166), IndextoY(166) - g_monster_size));
+	monsterA_Pos.push_back(Pos(IndextoX(183), IndextoY(183) - g_monster_size));
+	for (int i = 0; i < monsterANum; i++)
+		monsterA.push_back(Monster(monsterA_Pos[i], movementA[i], directionA[i]));
+
+	monsterB_Pos.push_back(Pos(IndextoX(440), IndextoY(440) - g_monster_size));
+	monsterB_Pos.push_back(Pos(IndextoX(291), IndextoY(291) - g_monster_size));
+	monsterB_Pos.push_back(Pos(IndextoX(302), IndextoY(302) - g_monster_size));
+	monsterB_Pos.push_back(Pos(IndextoX(181), IndextoY(181) - g_monster_size));
+	for (int i = 0; i < monsterBNum; i++)
+		monsterB.push_back(Monster(monsterB_Pos[i], movementB[i], directionB[i]));
+
+	// pointer
+	SDL_Surface* pointer_surface = IMG_Load("../../Resources/pointer_spritesheet.png");
+	g_texture_pointer = SDL_CreateTextureFromSurface(g_renderer, pointer_surface);
+	SDL_FreeSurface(pointer_surface);
+
+	for (int i = 0; i < 2; i++)
+		g_source_rectangle_pointer[i] = { i * 25, 0, 25, 25 };
+	g_destination_rectangle_pointer.w = 25;
+	g_destination_rectangle_pointer.h = 25;
+
+	isShot = false;
 }
 
 void Update_Stage2()
@@ -244,6 +245,45 @@ void Update_Stage2()
 		else
 			onladder = false;
 	}
+
+	if (isJump)
+	{
+		if (g_player_go_left && (g_destination_rectangle_player.x > IndextoX(641)))
+			g_destination_rectangle_player.x -= 5;
+		else if (g_player_go_right && (g_destination_rectangle_player.x < IndextoX(670)))
+			g_destination_rectangle_player.x += 5;
+
+		if (power > 0) {
+			g_destination_rectangle_player.y -= jumpSpeed;
+			power -= jumpSpeed;
+		}
+		else {
+			if (power <= -1 * Power + jumpSpeed) {
+				isJump = false;
+				power = Power + 1;
+			}
+			power -= jumpSpeed;
+			g_destination_rectangle_player.y += jumpSpeed;
+		}
+	}
+
+	// monster
+	for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++) {
+		iter->Move();
+	}
+	for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++) {
+		iter->Move();
+	}
+
+	// pointer
+	if (isShot) {
+		if (pointer_head == 0 && (g_destination_rectangle_pointer.x < IndextoX(670)) && (pointer_Pos.x + 100 > g_destination_rectangle_pointer.x))
+			g_destination_rectangle_pointer.x += 10;
+		else if (pointer_head == 1 && (g_destination_rectangle_pointer.x > IndextoX(641)) && (pointer_Pos.x - 100 < g_destination_rectangle_pointer.x))
+			g_destination_rectangle_pointer.x -= 10;
+		else
+			isShot = false;
+	}
 }
 
 
@@ -266,6 +306,14 @@ void Render_Stage2()
 	// ladder
 	for (int i = 0; i < 4; i++) {
 		SDL_RenderCopy(g_renderer, g_texture_ladder, &g_source_rectangle_ladder, &g_destination_rectangle_ladder[i]);
+	}
+
+	// pointer
+	if (isShot) {
+		if (pointer_head == 0)
+			SDL_RenderCopy(g_renderer, g_texture_pointer, &g_source_rectangle_pointer[0], &g_destination_rectangle_pointer);
+		else if (pointer_head == 1)
+			SDL_RenderCopy(g_renderer, g_texture_pointer, &g_source_rectangle_pointer[1], &g_destination_rectangle_pointer);
 	}
 
 	// player
@@ -297,6 +345,12 @@ void Render_Stage2()
 					g_flag = 1;
 			}
 		}
+		else if (isShot) {
+			if(g_player_head == 0)
+				SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[4], &g_destination_rectangle_player);
+			else if (g_player_head == 1)
+				SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[5], &g_destination_rectangle_player);
+		}
 		else if (g_player_head == 0)
 			SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[1], &g_destination_rectangle_player);
 		else if (g_player_head == 1)
@@ -317,6 +371,31 @@ void Render_Stage2()
 	SDL_RenderCopy(g_renderer, g_texture_timeW, &g_source_rectangle_timeW, &g_destination_rectangle_timeW);
 	SDL_RenderCopy(g_renderer, g_texture_timeG, &g_source_rectangle_timeG, &g_destination_rectangle_timeG);
 	SDL_RenderCopy(g_renderer, g_texture_timer, &g_source_rectangle_timer, &g_destination_rectangle_timer);
+
+	// monster
+	for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++) {
+		g_destination_rectangle_monster.x = iter->pos.x;
+		g_destination_rectangle_monster.y = iter->pos.y;
+		g_destination_rectangle_monster.w = g_monster_size;
+		g_destination_rectangle_monster.h = g_monster_size;
+
+		if (iter->isRight)
+			SDL_RenderCopy(g_renderer, g_texture_monster, &g_source_rectangle_monster[1], &g_destination_rectangle_monster);
+		else
+			SDL_RenderCopy(g_renderer, g_texture_monster, &g_source_rectangle_monster[0], &g_destination_rectangle_monster);
+	}
+
+	for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++) {
+		g_destination_rectangle_monster.x = iter->pos.x;
+		g_destination_rectangle_monster.y = iter->pos.y;
+		g_destination_rectangle_monster.w = g_monster_size;
+		g_destination_rectangle_monster.h = g_monster_size;
+
+		if (iter->isRight)
+			SDL_RenderCopy(g_renderer, g_texture_monster, &g_source_rectangle_monster[2], &g_destination_rectangle_monster);
+		else
+			SDL_RenderCopy(g_renderer, g_texture_monster, &g_source_rectangle_monster[3], &g_destination_rectangle_monster);
+	}
 
 	SDL_RenderPresent(g_renderer);
 }
@@ -348,11 +427,31 @@ void HandleEvents_Stage2()
 			}
 			else if (event.key.keysym.sym == SDLK_UP)
 			{
-				g_player_go_up = true;
+				if (!isJump)
+					g_player_go_up = true;
 			}
 			else if (event.key.keysym.sym == SDLK_DOWN)
 			{
-				g_player_go_down = true;
+				if (!isJump)
+					g_player_go_down = true;
+			}
+
+			if (event.key.keysym.sym == SDLK_SPACE)
+			{
+				if (!onladder)
+					isJump = true;
+			}
+
+			if (event.key.keysym.sym == SDLK_z)
+			{
+				if (!onladder && !isShot && !(g_player_head == 2)) {
+					isShot = true;
+					g_destination_rectangle_pointer.x = g_destination_rectangle_player.x;
+					g_destination_rectangle_pointer.y = g_destination_rectangle_player.y;
+					pointer_Pos.x = g_destination_rectangle_pointer.x;
+					pointer_Pos.y = g_destination_rectangle_pointer.y;
+					pointer_head = g_player_head;
+				}
 			}
 			break;
 
@@ -401,5 +500,7 @@ void Clear_Stage2()
 	SDL_DestroyTexture(g_texture_timeW);
 	SDL_DestroyTexture(g_texture_timeG);
 	SDL_DestroyTexture(g_texture_timer);
+	SDL_DestroyTexture(g_texture_monster);
+	SDL_DestroyTexture(g_texture_pointer);
 }
 

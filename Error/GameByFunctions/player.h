@@ -101,15 +101,15 @@ inline std::vector<Pos> Init_Map()
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 316; i <= 318; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 422; i <= 429; i++)
+	for (int i = 422; i <= 430; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 435; i <= 446; i++)
+	for (int i = 434; i <= 446; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 545; i <= 552; i++)
+	for (int i = 545; i <= 553; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 558; i <= 562; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 568; i <= 574; i++)
+	for (int i = 567; i <= 574; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
 
 	return map;
