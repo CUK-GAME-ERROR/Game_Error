@@ -1,65 +1,6 @@
 #include "GameFunc.h"
 #include "Stage3.h"
-#include <vector>
-#include <list>
-
-class Pos
-{
-public:
-	Pos() {
-		x = 0;
-		y = 0;
-	}
-
-	Pos(float _x, float _y) {
-		x = _x;
-		y = _y;
-	}
-
-	float x;
-	float y;
-};
-
-class Monster {
-public:
-	Pos pos;
-	Pos init_pos;
-	float move_destination;
-	bool isRight;
-
-	Monster() {
-		init_pos.x = 0;
-		init_pos.y = 0;
-		pos.x = 0;
-		pos.y = 0;
-		move_destination = 0;
-	}
-
-	Monster(Pos p, float move, bool right) {
-		pos = p;
-		init_pos = p;
-		move_destination = move;
-		isRight = right;
-	}
-
-	void Move() {
-		if (isRight) {
-			if (pos.x < init_pos.x + move_destination) {
-				pos.x += 5;
-			}
-			else
-				isRight = false;
-		}
-		else {
-			if (pos.x > init_pos.x - move_destination) {
-				pos.x -= 5;
-			}
-			else {
-				isRight = true;
-			}
-		}
-	}
-};
+#include "player.h"
 
 bool g_input[3] = { false, false, false };
 
@@ -105,6 +46,9 @@ bool direction[3] = { true, false, true };
 
 void Init_Stage3()
 {
+	//map
+	//Init_Map();
+
 	power = 100;
 	jumpSpeed = 20;
 	Power = power;
@@ -123,7 +67,7 @@ void Init_Stage3()
 		b_attackDown_destination.x += 200;
 	}
 
-	//sub_monster
+	//monster
 	monster_Pos.push_back(Pos(150, 300));
 	monster_Pos.push_back(Pos(200, 350));
 	monster_Pos.push_back(Pos(150, 400));
@@ -135,21 +79,21 @@ void Init_Stage3()
 	g_flag_running = true;
 	g_elapsed_time_ms = 0;
 
-	SDL_Surface* player_sheet_surface = IMG_Load("../../Resources/Player.png");
+	SDL_Surface* player_sheet_surface = IMG_Load("../../Resources/player_stop.png");
 	g_player_sheet_texture = SDL_CreateTextureFromSurface(g_renderer, player_sheet_surface);
 	SDL_FreeSurface(player_sheet_surface);
 
 	//SDL_QueryTexture(g_player_sheet_texture, NULL, NULL, &g_source_rect.w, &g_source_rect.h);
 
-	g_source_rect.x = 63;
-	g_source_rect.y = 41;
-	g_source_rect.w = 374;
-	g_source_rect.h = 416;
+	g_source_rect.x = 0;
+	g_source_rect.y = 0;
+	g_source_rect.w = 25;
+	g_source_rect.h = 31;
 
 	g_destination_rect.x = 300;
 	g_destination_rect.y = 550;
-	g_destination_rect.w = 50;
-	g_destination_rect.h = 100;
+	g_destination_rect.w = g_source_rect.w;
+	g_destination_rect.h = g_source_rect.h;
 
 	b_destination_rect.x = 500;
 	b_destination_rect.y = 600;
@@ -303,34 +247,21 @@ void Update_Stage3()
 void Render_Stage3()
 {
 	// Background
-	SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 255);
+	SDL_SetRenderDrawColor(g_renderer, 197, 224, 181, 255);
 	SDL_RenderClear(g_renderer);
 
-	{
-		SDL_SetRenderDrawColor(g_renderer, 255, 255, 255, 255);
+	/*SDL_Rect r;
+	r.w = r.h = 25;
 
-		SDL_Rect backGround;
-		backGround.x = 34;
-		backGround.y = 167;
-		backGround.w = 733;
-		backGround.h = 500;
+	// map
+	SDL_SetRenderDrawColor(g_renderer, 143, 170, 220, 255);
+	for (int i = 0; i < map.size(); i++) {
+		r.x = map[i].x;
+		r.y = map[i].y;
+		SDL_RenderFillRect(g_renderer, &r);
+	}*/
 
-		SDL_RenderFillRect(g_renderer, &backGround);
-	}
-
-	{
-		SDL_SetRenderDrawColor(g_renderer, 128, 128, 128, 255);
-
-		SDL_Rect ground1;
-		ground1.x = 50;
-		ground1.y = 700;
-		ground1.w = 600;
-		ground1.h = 50;
-
-		SDL_RenderFillRect(g_renderer, &ground1);
-	}
-
-	{
+	/*{
 		SDL_SetRenderDrawColor(g_renderer, 188, 229, 92, 255);
 
 		SDL_Rect player;
@@ -340,7 +271,7 @@ void Render_Stage3()
 		player.h = g_destination_rect.h;
 
 		SDL_RenderFillRect(g_renderer, &player);
-	}
+	}*/
 
 	{
 		SDL_SetRenderDrawColor(g_renderer, 188, 229, 92, 255);
@@ -387,7 +318,7 @@ void Render_Stage3()
 	}
 
 	//Player
-	//SDL_RenderCopy(g_renderer, g_player_sheet_texture, &g_source_rect, &g_destination_rect);
+	SDL_RenderCopy(g_renderer, g_player_sheet_texture, &g_source_rect, &g_destination_rect);
 
 	SDL_RenderPresent(g_renderer);
 }

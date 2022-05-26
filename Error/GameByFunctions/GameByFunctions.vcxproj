@@ -31,6 +31,7 @@
     <ClInclude Include="Ending.h" />
     <ClInclude Include="Intro.h" />
     <ClInclude Include="GameFunc.h" />
+    <ClInclude Include="player.h" />
     <ClInclude Include="Stage1.h" />
     <ClInclude Include="Stage2.h" />
     <ClInclude Include="Stage3.h" />
