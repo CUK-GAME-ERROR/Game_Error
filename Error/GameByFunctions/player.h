@@ -1,9 +1,7 @@
 #pragma once
 #include <vector>
 #include <list>
-
-//player HP
-//extern int hp;
+#include "SDL.h"
 
 class Pos
 {

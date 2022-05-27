@@ -8,19 +8,23 @@ bool g_input[3] = { false, false, false };
 SDL_Texture* g_player_sheet_texture;
 SDL_Rect g_source_rectangle_player;
 SDL_Rect g_destination_rectangle_player;
+SDL_Rect player_attack_rect;
 
 float power;
 float Power;
 float jumpSpeed;
 bool isJump;
-int hp = 3;
+int hp_P;
+
 
 //boss
+SDL_Texture* b_sheet_texture;
+SDL_Rect b_source_rect;
 int hp_B = 5;
 SDL_Rect b_destination_rect;
 int ran;
-float ranPos_x[3] = { 500, 150, 400 };
-float ranPos_y[3] = { 600, 200, 350 };
+float ranPos_x[3] = { 50, 500,  350};
+float ranPos_y[3] = { 195, 295, 395 };
 float attackCool_Down;
 SDL_Rect b_attackDown_destination;
 
@@ -42,11 +46,15 @@ int g_last_time_ms;
 int c_last_time;
 
 //monster
-int monsterNum = 3;
+int monsterNum = 4;
 std::list<Monster> sub_M;
 std::vector<Pos> monster_Pos;
-float movement[3] = { 100, 50, 30 };
-bool direction[3] = { true, false, true };
+float movement[4] = { 55, 140, 70, 60 };
+bool direction[4] = { true, false, true, false };
+
+SDL_Texture* m_sheet_texture;
+SDL_Rect m_source_rect;
+SDL_Rect m_destination_rect;
 
 //map
 static std::vector<Pos> map_stage3;
@@ -67,8 +75,6 @@ void Init_Stage3()
 	randCool = 10000;
 	changeCool = 2000;
 
-	hp = 3;
-
 	b_attackDown_destination.x = 51;
 	b_attackDown_destination.y = 184;
 	b_attackDown_destination.w = 50;
@@ -81,9 +87,10 @@ void Init_Stage3()
 	}
 
 	//monster
-	monster_Pos.push_back(Pos(150, 300));
-	monster_Pos.push_back(Pos(200, 350));
-	monster_Pos.push_back(Pos(150, 400));
+	monster_Pos.push_back(Pos(100, 300));
+	monster_Pos.push_back(Pos(500, 200));
+	monster_Pos.push_back(Pos(220, 400));
+	monster_Pos.push_back(Pos(500, 500));
 
 	for (int k = 0; k < monsterNum; k++) {
 		sub_M.push_back(Monster(monster_Pos[k], movement[k], direction[k]));
@@ -105,10 +112,34 @@ void Init_Stage3()
 	g_destination_rectangle_player.w = g_source_rectangle_player.w;
 	g_destination_rectangle_player.h = g_source_rectangle_player.h;
 
+	SDL_Surface* boss_sheet_surface = IMG_Load("../../Resources/boss.png");
+	b_sheet_texture = SDL_CreateTextureFromSurface(g_renderer, boss_sheet_surface);
+	SDL_FreeSurface(boss_sheet_surface);
+
+	b_source_rect.x = 61;
+	b_source_rect.y = 38;
+	b_source_rect.w = 396;
+	b_source_rect.h = 427;
+
 	b_destination_rect.x = 50;
-	b_destination_rect.y = 200;
+	b_destination_rect.y = 195;
 	b_destination_rect.w = 50;
-	b_destination_rect.h = 50;
+	b_destination_rect.h = 60;
+
+	//sub_Monster
+	SDL_Surface* monster_sheet_surface = IMG_Load("../../Resources/sub.png");
+	m_sheet_texture = SDL_CreateTextureFromSurface(g_renderer, monster_sheet_surface);
+	SDL_FreeSurface(monster_sheet_surface);
+
+	m_source_rect.x = 27;
+	m_source_rect.y = 27;
+	m_source_rect.w = 267;
+	m_source_rect.h = 254;
+
+	m_destination_rect.x = sub_M.begin()->pos.x;
+	m_destination_rect.y = sub_M.begin()->pos.y;
+	m_destination_rect.w = 50;
+	m_destination_rect.h = 50;
 }
 
 
@@ -243,8 +274,13 @@ void Update_Stage3()
 	}
 
 	if (checkCollision(g_destination_rectangle_player, b_attackDown_destination)) {
-		hp--;
-		std::cout << hp << std::endl;
+		std::cout << "Attack" << std::endl;
+	}
+
+	if (checkCollision(b_destination_rect, player_attack_rect)) {
+		isMove = true;
+		hp_B--;
+		std::cout << "Attack_B" << std::endl;
 	}
 
 	g_elapsed_time_ms += 33;
@@ -293,16 +329,12 @@ void Render_Stage3()
 		SDL_RenderFillRect(g_renderer, &boss);
 	}
 
-	SDL_SetRenderDrawColor(g_renderer, 188, 229, 92, 255);
-	SDL_Rect monster;
 
 	for (auto iter = sub_M.begin(); iter != sub_M.end(); iter++) {
-		monster.x = iter->pos.x;
-		monster.y = iter->pos.y;
-		monster.w = 30;
-		monster.h = 30;
+		m_destination_rect.x = iter->pos.x;
+		m_destination_rect.y = iter->pos.y;
 
-		SDL_RenderFillRect(g_renderer, &monster);
+		SDL_RenderCopy(g_renderer, m_sheet_texture, &m_source_rect, &m_destination_rect);
 	}
 
 	if (isTime) {
@@ -324,6 +356,9 @@ void Render_Stage3()
 
 	//Player
 	//SDL_RenderCopy(g_renderer, g_player_sheet_texture, &g_source_rectangle_player, &g_destination_rectangle_player);
+
+	//boss
+	//SDL_RenderCopy(g_renderer, b_sheet_texture, &b_source_rect, &b_destination_rect);
 
 	SDL_RenderPresent(g_renderer);
 }
