@@ -118,7 +118,9 @@ inline std::vector<Pos> Init_Map()
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 161; i <= 171; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 176; i <= 187; i++)
+	for (int i = 174; i <= 174; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 177; i <= 188; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 289; i <= 294; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
@@ -134,7 +136,7 @@ inline std::vector<Pos> Init_Map()
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 545; i <= 553; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 558; i <= 562; i++)
+	for (int i = 557; i <= 563; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 567; i <= 574; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });

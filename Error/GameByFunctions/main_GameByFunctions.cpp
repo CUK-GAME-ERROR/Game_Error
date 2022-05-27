@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 	Init_Stage3();
 	Init_Ending();
 
-	g_current_game_phase = PHASE_STAGE1;
+	g_current_game_phase = PHASE_STAGE2;
 
 	g_last_time_ms = SDL_GetTicks();
 
