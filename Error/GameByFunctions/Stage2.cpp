@@ -4,6 +4,8 @@
 #include "player.h"
 
 static std::vector<Pos> map;
+static std::vector<Pos> ground;
+static std::vector<Pos> hole;
 
 static SDL_Texture* g_texture_player;
 static SDL_Rect g_source_rectangle_player[10];
@@ -24,6 +26,7 @@ static float power;
 static float Power;
 static float jumpSpeed;
 static bool isJump;
+static bool isFall;
 
 static bool g_player_go_left;
 static bool g_player_go_right;
@@ -101,6 +104,8 @@ void Init_Stage2()
 {
 	// map
 	map = Init_Map();
+	ground = Init_Ground();
+	hole = Init_Hole();
 
 	// player
 	SDL_Surface* player_surface = IMG_Load("../../Resources/player_spritesheet.png");
@@ -121,6 +126,7 @@ void Init_Stage2()
 	g_player_go_down = false;
 
 	isJump = false;
+	isFall = false;
 	power = 40;
 	jumpSpeed = 5;
 	Power = power;
@@ -531,6 +537,32 @@ void Update_Stage2()
 		}
 	}
 
+	for (int i = 0; i < hole.size(); i++) {
+		if ((g_destination_rectangle_player.x == hole[i].x) &&
+			(g_destination_rectangle_player.y + g_destination_rectangle_player.h == hole[i].y))
+		{
+			isFall = true;
+			break;
+		}
+	}
+
+	if (isFall)
+	{
+		g_destination_rectangle_player.y += 10;
+		for (int i = 0; i < ground.size(); i++) {
+			if ((g_destination_rectangle_player.x == ground[i].x) &&
+				(g_destination_rectangle_player.y + g_destination_rectangle_player.h == ground[i].y))
+			{
+				g_player_heart -= 1;
+				if (g_player_heart <= 0)
+					g_current_game_phase = PHASE_STAGE1;
+				g_player_unbeatable = true;
+				isFall = false;
+				break;
+			}
+		}
+	}
+
 	Update_pointerNum();
 }
 
@@ -736,44 +768,45 @@ void HandleEvents_Stage2()
 			break;
 
 		case SDL_KEYDOWN:
-			// If the left arrow key is pressed. 
-			if (event.key.keysym.sym == SDLK_LEFT)
-			{
-				g_player_go_left = true;
-				g_player_head = 1;
-			}
-			else if (event.key.keysym.sym == SDLK_RIGHT)
-			{
-				g_player_go_right = true;
-				g_player_head = 0;
-			}
-			else if (event.key.keysym.sym == SDLK_UP)
-			{
-				if (!isJump)
-					g_player_go_up = true;
-			}
-			else if (event.key.keysym.sym == SDLK_DOWN)
-			{
-				if (!isJump)
-					g_player_go_down = true;
-			}
+			if (!isFall) {
+				if (event.key.keysym.sym == SDLK_LEFT)
+				{
+					g_player_go_left = true;
+					g_player_head = 1;
+				}
+				else if (event.key.keysym.sym == SDLK_RIGHT)
+				{
+					g_player_go_right = true;
+					g_player_head = 0;
+				}
+				else if (event.key.keysym.sym == SDLK_UP)
+				{
+					if (!isJump)
+						g_player_go_up = true;
+				}
+				else if (event.key.keysym.sym == SDLK_DOWN)
+				{
+					if (!isJump)
+						g_player_go_down = true;
+				}
 
-			if (event.key.keysym.sym == SDLK_SPACE)
-			{
-				if (!onladder)
-					isJump = true;
-			}
+				if (event.key.keysym.sym == SDLK_SPACE)
+				{
+					if (!onladder)
+						isJump = true;
+				}
 
-			if (event.key.keysym.sym == SDLK_z)
-			{
-				if (!onladder && !isShot && !(g_player_head == 2) && pointer_num != 0) {
-					isShot = true;
-					g_destination_rectangle_pointer.x = g_destination_rectangle_player.x;
-					g_destination_rectangle_pointer.y = g_destination_rectangle_player.y;
-					pointer_Pos.x = g_destination_rectangle_pointer.x;
-					pointer_Pos.y = g_destination_rectangle_pointer.y;
-					pointer_head = g_player_head;
-					pointer_num--;
+				if (event.key.keysym.sym == SDLK_z)
+				{
+					if (!onladder && !isShot && !(g_player_head == 2) && pointer_num != 0) {
+						isShot = true;
+						g_destination_rectangle_pointer.x = g_destination_rectangle_player.x;
+						g_destination_rectangle_pointer.y = g_destination_rectangle_player.y;
+						pointer_Pos.x = g_destination_rectangle_pointer.x;
+						pointer_Pos.y = g_destination_rectangle_pointer.y;
+						pointer_head = g_player_head;
+						pointer_num--;
+					}
 				}
 			}
 			break;
