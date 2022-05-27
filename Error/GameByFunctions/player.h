@@ -29,6 +29,7 @@ public:
 	Pos init_pos;
 	float move_destination;
 	bool isRight;
+	bool isAlive;
 
 	Monster() {
 		init_pos.x = 0;
@@ -43,6 +44,14 @@ public:
 		init_pos = p;
 		move_destination = move;
 		isRight = right;
+	}
+
+	Monster(Pos p, float move, bool right, bool alive) {
+		pos = p;
+		init_pos = p;
+		move_destination = move;
+		isRight = right;
+		isAlive = alive;
 	}
 
 	void Move() {
@@ -61,6 +70,26 @@ public:
 				isRight = true;
 			}
 		}
+	}
+};
+
+class Item {
+public:
+	Pos pos;
+	int type; // 0:coffee 1:energydrink
+	bool drink;
+
+	Item() {
+		pos.x = 0;
+		pos.y = 0;
+		type = 0;
+		drink = false;
+	}
+
+	Item(Pos p, int t) {
+		pos = p;
+		type = t;
+		drink = false;
 	}
 };
 
