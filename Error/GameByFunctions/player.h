@@ -27,6 +27,7 @@ public:
 	Pos init_pos;
 	float move_destination;
 	bool isRight;
+	bool isAlive;
 
 	Monster() {
 		init_pos.x = 0;
@@ -41,6 +42,14 @@ public:
 		init_pos = p;
 		move_destination = move;
 		isRight = right;
+	}
+
+	Monster(Pos p, float move, bool right, bool alive) {
+		pos = p;
+		init_pos = p;
+		move_destination = move;
+		isRight = right;
+		isAlive = alive;
 	}
 
 	void Move() {
@@ -59,6 +68,26 @@ public:
 				isRight = true;
 			}
 		}
+	}
+};
+
+class Item {
+public:
+	Pos pos;
+	int type; // 0:coffee 1:energydrink
+	bool drink;
+
+	Item() {
+		pos.x = 0;
+		pos.y = 0;
+		type = 0;
+		drink = false;
+	}
+
+	Item(Pos p, int t) {
+		pos = p;
+		type = t;
+		drink = false;
 	}
 };
 
@@ -99,15 +128,15 @@ inline std::vector<Pos> Init_Map()
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 316; i <= 318; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 422; i <= 429; i++)
+	for (int i = 422; i <= 430; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 435; i <= 446; i++)
+	for (int i = 434; i <= 446; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 545; i <= 552; i++)
+	for (int i = 545; i <= 553; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 558; i <= 562; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 568; i <= 574; i++)
+	for (int i = 567; i <= 574; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
 
 	return map;
