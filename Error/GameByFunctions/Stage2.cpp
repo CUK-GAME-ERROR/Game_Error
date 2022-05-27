@@ -50,13 +50,13 @@ static int time_ms_;
 static int monsterANum = 4;
 static std::list<Monster> monsterA;
 static std::vector<Pos> monsterA_Pos;
-static float movementA[5] = { 100, 100, 125, 100 };
+static float movementA[5] = { 100, 100, 125, 125 };
 static bool directionA[5] = { true, false, true, false };
 
 static int monsterBNum = 4;
 static std::list<Monster> monsterB;
 static std::vector<Pos> monsterB_Pos;
-static float movementB[4] = { 150, 50, 100, 125 };
+static float movementB[4] = { 150, 50, 100, 100 };
 static bool directionB[4] = { true, true, true, true };
 
 static SDL_Texture* g_texture_monster;
@@ -462,6 +462,8 @@ void Update_Stage2()
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
 			g_player_heart -= 2;
+			if (g_player_heart <= 0)
+				g_current_game_phase = PHASE_STAGE1;
 			g_player_unbeatable = true;
 			break;
 		}
@@ -481,6 +483,8 @@ void Update_Stage2()
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
 			g_player_heart -= 2;
+			if (g_player_heart <= 0)
+				g_current_game_phase = PHASE_STAGE1;
 			g_player_unbeatable = true;
 			break;
 		}
@@ -678,6 +682,9 @@ void Render_Stage2()
 	SDL_RenderCopy(g_renderer, g_texture_timeW, &g_source_rectangle_timeW, &g_destination_rectangle_timeW);
 	SDL_RenderCopy(g_renderer, g_texture_timeG, &g_source_rectangle_timeG, &g_destination_rectangle_timeG);
 	SDL_RenderCopy(g_renderer, g_texture_timer, &g_source_rectangle_timer, &g_destination_rectangle_timer);
+
+	if(g_destination_rectangle_timeG.w == 0)
+		g_current_game_phase = PHASE_STAGE3;
 
 	// link
 	SDL_RenderCopy(g_renderer, g_texture_link, &g_source_rectangle_link, &g_destination_rectangle_link);
