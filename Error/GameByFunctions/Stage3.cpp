@@ -2,19 +2,30 @@
 #include "Stage3.h"
 #include "player.h"
 
-bool g_input[3] = { false, false, false };
 
 //player
-SDL_Texture* g_player_sheet_texture;
-SDL_Rect g_source_rectangle_player;
-SDL_Rect g_destination_rectangle_player;
-SDL_Rect player_attack_rect;
+int move_state;
+static SDL_Texture* g_texture_player;
+static SDL_Rect g_source_rectangle_player[10];
+static SDL_Rect g_destination_rectangle_player;
 
 float power;
 float Power;
 float jumpSpeed;
 bool isJump;
 int hp_P;
+
+static int g_player_height;
+static int g_player_head; // 0:right, 1:left, 2: front
+static int g_running_flag; // 1~10, 11~20
+static int g_player_heart; // 1 heart = 2 g_player_heart
+static bool g_player_unbeatable;
+static int g_unbeatable_flag;
+
+static bool g_player_go_left;
+static bool g_player_go_right;
+static bool g_player_go_up;
+static bool g_player_go_down;
 
 
 //boss
@@ -23,10 +34,12 @@ SDL_Rect b_source_rect;
 int hp_B = 5;
 SDL_Rect b_destination_rect;
 int ran;
-float ranPos_x[3] = { 50, 500,  350};
-float ranPos_y[3] = { 195, 295, 395 };
+//float ranPos_x[3] = { IndextoX(98), IndextoX(252), IndextoX(610) };
+//float ranPos_y[3] = { IndextoY(98), IndextoY(252), IndextoY(610) };
+std::vector<Pos> ranPos;
 float attackCool_Down;
 SDL_Rect b_attackDown_destination;
+SDL_Rect b_attackDown_rect;
 
 std::list<Pos> a_position;
 bool isDown;
@@ -46,32 +59,65 @@ int g_last_time_ms;
 int c_last_time;
 
 //monster
-int monsterNum = 4;
-std::list<Monster> sub_M;
-std::vector<Pos> monster_Pos;
-float movement[4] = { 55, 140, 70, 60 };
-bool direction[4] = { true, false, true, false };
+static int monsterANum = 3;
+static std::list<Monster> monsterA;
+static std::vector<Pos> monsterA_Pos;
+static float movementA[5] = { 100, 100, 100 };
+static bool directionA[5] = { true, false, false };
 
-SDL_Texture* m_sheet_texture;
-SDL_Rect m_source_rect;
-SDL_Rect m_destination_rect;
+static int monsterBNum = 3;
+static std::list<Monster> monsterB;
+static std::vector<Pos> monsterB_Pos;
+static float movementB[3] = { 150, 100, 98};
+static bool directionB[3] = { true, true, true};
+
+static SDL_Texture* g_texture_monster;
+static SDL_Rect g_source_rectangle_monster[4];
+static SDL_Rect g_destination_rectangle_monster;
+static int g_monster_size;
+
 
 //map
 static std::vector<Pos> map_stage3;
 
-//player АјАн
-std::list<Pos> c_state[3];
-bool c_direction;
+//ladder
+static SDL_Texture* g_texture_ladder;
+static SDL_Rect g_source_rectangle_ladder;
+static SDL_Rect g_destination_rectangle_ladder[4];
+static bool onladder;
+
+//link
+static SDL_Texture* g_texture_link;
+static SDL_Rect g_source_rectangle_link;
+static SDL_Rect g_destination_rectangle_link;
+
+//pointer
+static SDL_Texture* g_texture_pointer;
+static SDL_Rect g_source_rectangle_pointer[2];
+static SDL_Rect g_destination_rectangle_pointer;
+static int pointer_num; // 10
+static Pos pointer_Pos;
+static int pointer_head;
+static bool isShot;
+
+static SDL_Texture* g_texture_pointer50;
+static SDL_Rect g_source_rectangle_pointer50;
+static SDL_Rect g_destination_rectangle_pointer50;
+static SDL_Texture* pointerNum_text;
+static SDL_Rect pointerNum_rect;
+
+//heart
+static SDL_Texture* g_texture_heart;
+static SDL_Rect g_source_rectangle_heart[3];
+static SDL_Rect g_destination_rectangle_heart;
+
 
 void Init_Stage3()
 {
 	//map
 	map_stage3 = Init_Map();
 
-	power = 100;
-	jumpSpeed = 20;
-	Power = power;
-	attackCool_Down = 2000;
+	attackCool_Down = 5000;
 	randCool = 10000;
 	changeCool = 2000;
 
@@ -80,37 +126,45 @@ void Init_Stage3()
 	b_attackDown_destination.w = 50;
 	b_attackDown_destination.h = 50;
 
+	b_attackDown_rect.x = 51;
+	b_attackDown_rect.y = 184;
+	b_attackDown_rect.w = 50;
+	b_attackDown_rect.h = 50;
+
 	for (int i = 0; i < 4; i++) {
-		//std::cout << "x: " << b_attackDown_destination.x << " y: " << b_attackDown_destination.y << std::endl;
 		a_position.push_back(Pos(b_attackDown_destination.x, b_attackDown_destination.y));
 		b_attackDown_destination.x += 200;
-	}
-
-	//monster
-	monster_Pos.push_back(Pos(100, 300));
-	monster_Pos.push_back(Pos(500, 200));
-	monster_Pos.push_back(Pos(220, 400));
-	monster_Pos.push_back(Pos(500, 500));
-
-	for (int k = 0; k < monsterNum; k++) {
-		sub_M.push_back(Monster(monster_Pos[k], movement[k], direction[k]));
 	}
 
 	g_flag_running = true;
 	g_elapsed_time_ms = 0;
 
-	SDL_Surface* player_sheet_surface = IMG_Load("../../Resources/player_stop.png");
-	g_player_sheet_texture = SDL_CreateTextureFromSurface(g_renderer, player_sheet_surface);
-	SDL_FreeSurface(player_sheet_surface);
+	SDL_Surface* player_surface = IMG_Load("../../Resources/player_spritesheet.png");
+	g_texture_player = SDL_CreateTextureFromSurface(g_renderer, player_surface);
+	SDL_FreeSurface(player_surface);
 
-	SDL_QueryTexture(g_player_sheet_texture, NULL, NULL, &g_source_rectangle_player.w, &g_source_rectangle_player.h);
-
-	g_source_rectangle_player.x = 0;
-	g_source_rectangle_player.y = 0;
+	g_player_height = 30;
+	for (int i = 0; i < 10; i++)
+		g_source_rectangle_player[i] = { 25 * i, 0, 25, 30 };
 	g_destination_rectangle_player.x = IndextoX(670);
-	g_destination_rectangle_player.y = IndextoY(702) - g_source_rectangle_player.h;
-	g_destination_rectangle_player.w = g_source_rectangle_player.w;
-	g_destination_rectangle_player.h = g_source_rectangle_player.h;
+	g_destination_rectangle_player.y = IndextoY(702) - g_player_height;
+	g_destination_rectangle_player.w = 25;
+	g_destination_rectangle_player.h = g_player_height;
+
+	g_player_go_left = false;
+	g_player_go_right = false;
+	g_player_go_up = false;
+	g_player_go_down = false;
+
+	isJump = false;
+	power = 40;
+	jumpSpeed = 5;
+	Power = power;
+
+	g_player_head = 1;
+	g_running_flag = 1;
+	g_player_heart = 4;
+	g_player_unbeatable = false;
 
 	SDL_Surface* boss_sheet_surface = IMG_Load("../../Resources/boss.png");
 	b_sheet_texture = SDL_CreateTextureFromSurface(g_renderer, boss_sheet_surface);
@@ -126,20 +180,138 @@ void Init_Stage3()
 	b_destination_rect.w = 50;
 	b_destination_rect.h = 60;
 
+	//bossRandomMove
+	ranPos.push_back(Pos(IndextoX(252), IndextoY(252)));
+	ranPos.push_back(Pos(IndextoX(610), IndextoY(610)));
+
+	for (int j = 0; j < 2; j++) {
+		std::cout << j << std::endl;
+		std::cout << "x: " << ranPos[j].x << std::endl;
+		std::cout << "y: " << ranPos[j].y << std::endl;
+	}
+
 	//sub_Monster
-	SDL_Surface* monster_sheet_surface = IMG_Load("../../Resources/sub.png");
-	m_sheet_texture = SDL_CreateTextureFromSurface(g_renderer, monster_sheet_surface);
-	SDL_FreeSurface(monster_sheet_surface);
+	SDL_Surface* monster_surface = IMG_Load("../../Resources/monster_spritesheet.png");
+	g_texture_monster = SDL_CreateTextureFromSurface(g_renderer, monster_surface);
+	SDL_FreeSurface(monster_surface);
 
-	m_source_rect.x = 27;
-	m_source_rect.y = 27;
-	m_source_rect.w = 267;
-	m_source_rect.h = 254;
+	for (int i = 0; i < 4; i++)
+		g_source_rectangle_monster[i] = { 25 * i, 0, 25, 25 };
+	g_monster_size = 25;
 
-	m_destination_rect.x = sub_M.begin()->pos.x;
-	m_destination_rect.y = sub_M.begin()->pos.y;
-	m_destination_rect.w = 50;
-	m_destination_rect.h = 50;
+	monsterA_Pos.push_back(Pos(IndextoX(549), IndextoY(549) - g_monster_size));
+	monsterA_Pos.push_back(Pos(IndextoX(426), IndextoY(426) - g_monster_size));
+	//monsterA_Pos.push_back(Pos(IndextoX(166), IndextoY(166) - g_monster_size));
+	monsterA_Pos.push_back(Pos(IndextoX(183), IndextoY(183) - g_monster_size));
+	for (int i = 0; i < monsterANum; i++)
+		monsterA.push_back(Monster(monsterA_Pos[i], movementA[i], directionA[i], true));
+
+	monsterB_Pos.push_back(Pos(IndextoX(440), IndextoY(440) - g_monster_size));
+	monsterB_Pos.push_back(Pos(IndextoX(571), IndextoY(571) - g_monster_size));
+	//monsterB_Pos.push_back(Pos(IndextoX(291), IndextoY(291) - g_monster_size));
+	monsterB_Pos.push_back(Pos(IndextoX(302), IndextoY(302) - g_monster_size));
+	//monsterB_Pos.push_back(Pos(IndextoX(181), IndextoY(181) - g_monster_size));
+	for (int i = 0; i < monsterBNum; i++)
+		monsterB.push_back(Monster(monsterB_Pos[i], movementB[i], directionB[i], true));
+
+	//ladder
+	SDL_Surface* lader_surface = IMG_Load("../../Resources/ladder25.png");
+	g_texture_ladder = SDL_CreateTextureFromSurface(g_renderer, lader_surface);
+	SDL_FreeSurface(lader_surface);
+
+	SDL_QueryTexture(g_texture_ladder, NULL, NULL, &g_source_rectangle_ladder.w, &g_source_rectangle_ladder.h);
+	g_source_rectangle_ladder.x = 0;
+	g_source_rectangle_ladder.y = 0;
+	g_destination_rectangle_ladder[0] = { IndextoX(644), IndextoY(548), g_source_rectangle_ladder.w, g_source_rectangle_ladder.h };
+	g_destination_rectangle_ladder[1] = { IndextoX(541), IndextoY(445), g_source_rectangle_ladder.w, g_source_rectangle_ladder.h };
+	g_destination_rectangle_ladder[2] = { IndextoX(395), IndextoY(299), g_source_rectangle_ladder.w, g_source_rectangle_ladder.h };
+	g_destination_rectangle_ladder[3] = { IndextoX(279), IndextoY(183), g_source_rectangle_ladder.w, g_source_rectangle_ladder.h };
+
+	onladder = false;
+
+	// heart
+	SDL_Surface* heart_surface = IMG_Load("../../Resources/heart_spritesheet.png");
+	g_texture_heart = SDL_CreateTextureFromSurface(g_renderer, heart_surface);
+	SDL_FreeSurface(heart_surface);
+
+	for (int i = 0; i < 3; i++)
+		g_source_rectangle_heart[i] = { 25 * i, 0, 25, 25 };
+
+	// link
+	SDL_Surface* link_surface = IMG_Load("../../Resources/link.png");
+	g_texture_link = SDL_CreateTextureFromSurface(g_renderer, link_surface);
+	SDL_FreeSurface(link_surface);
+
+	SDL_QueryTexture(g_texture_link, NULL, NULL, &g_source_rectangle_link.w, &g_source_rectangle_link.h);
+	g_source_rectangle_link.x = 0;
+	g_source_rectangle_link.y = 0;
+	g_destination_rectangle_link.x = IndextoX(0);
+	g_destination_rectangle_link.y = IndextoY(0);
+	g_destination_rectangle_link.w = g_source_rectangle_link.w;
+	g_destination_rectangle_link.h = g_source_rectangle_link.h;
+
+
+	//pointer
+	SDL_Surface* pointer_surface = IMG_Load("../../Resources/pointer_spritesheet.png");
+	g_texture_pointer = SDL_CreateTextureFromSurface(g_renderer, pointer_surface);
+
+	pointer_surface = IMG_Load("../../Resources/pointer50.png");
+	g_texture_pointer50 = SDL_CreateTextureFromSurface(g_renderer, pointer_surface);
+
+	SDL_FreeSurface(pointer_surface);
+
+	for (int i = 0; i < 2; i++)
+		g_source_rectangle_pointer[i] = { i * 25, 0, 25, 25 };
+	g_destination_rectangle_pointer.w = 25;
+	g_destination_rectangle_pointer.h = 25;
+
+	SDL_QueryTexture(g_texture_pointer50, NULL, NULL, &g_source_rectangle_pointer50.w, &g_source_rectangle_pointer50.h);
+	g_source_rectangle_pointer50.x = 0;
+	g_source_rectangle_pointer50.y = 0;
+	g_destination_rectangle_pointer50 = { 25, 75, 50, 50 };
+
+	pointer_num = 10;
+	isShot = false;
+}
+
+void playerRanKeyDown(int move_state) {
+	switch (move_state) {
+	case 0:
+		g_player_go_left = true;
+		g_player_head = 1;
+		break;
+	case 1:
+		g_player_go_right = true;
+		g_player_head = 0;
+		break;
+	case 2:
+		if (!isJump)
+			g_player_go_up = true;
+		break;
+	case 3:
+		if (!isJump)
+			g_player_go_down = true;
+		break;
+	}
+}
+
+void playerRanKeyUp(int move_state) {
+	switch (move_state) {
+	case 0:
+		g_player_go_left = false;
+		g_running_flag = 1;
+		break;
+	case 1:
+		g_player_go_right = false;
+		g_running_flag = 1;
+		break;
+	case 2:
+		g_player_go_up = false;
+		break;
+	case 3:
+		g_player_go_down = false;
+		break;
+	}
 }
 
 
@@ -154,30 +326,65 @@ void HandleEvents_Stage3()
 			g_flag_running = false;
 			break;
 		case SDL_KEYDOWN:
-			if (event.key.keysym.sym == SDLK_LEFT) {
-				c_direction = true;
-				g_input[ran_m[0]] = true;
+			if (event.key.keysym.sym == SDLK_LEFT)
+			{
+				g_player_go_left = true;
+				g_player_head = 1;
 			}
-			else if (event.key.keysym.sym == SDLK_RIGHT) {
-				c_direction = false;
-				g_input[ran_m[1]] = true;
+			else if (event.key.keysym.sym == SDLK_RIGHT)
+			{
+				g_player_go_right = true;
+				g_player_head = 0;
+			}
+			else if (event.key.keysym.sym == SDLK_UP)
+			{
+				if (!isJump)
+					g_player_go_up = true;
+			}
+			else if (event.key.keysym.sym == SDLK_DOWN)
+			{
+				if (!isJump)
+					g_player_go_down = true;
 			}
 
-			if (event.key.keysym.sym == SDLK_SPACE) {
-				g_input[2] = true;
+			if (event.key.keysym.sym == SDLK_SPACE)
+			{
+				if (!onladder)
+					isJump = true;
 			}
+
 			if (event.key.keysym.sym == SDLK_z) {
-
+				if (!onladder && !isShot && !(g_player_head == 2) && pointer_num != 0) {
+					isShot = true;
+					g_destination_rectangle_pointer.x = g_destination_rectangle_player.x;
+					g_destination_rectangle_pointer.y = g_destination_rectangle_player.y;
+					pointer_Pos.x = g_destination_rectangle_pointer.x;
+					pointer_Pos.y = g_destination_rectangle_pointer.y;
+					pointer_head = g_player_head;
+					pointer_num--;
+				}
 			}
 
 			break;
 
 		case SDL_KEYUP:
-			if (event.key.keysym.sym == SDLK_LEFT) {
-				g_input[ran_m[0]] = false;
+			if (event.key.keysym.sym == SDLK_LEFT)
+			{
+				g_player_go_left = false;
+				g_running_flag = 1;
 			}
-			else if (event.key.keysym.sym == SDLK_RIGHT) {
-				g_input[ran_m[1]] = false;
+			if (event.key.keysym.sym == SDLK_RIGHT)
+			{
+				g_player_go_right = false;
+				g_running_flag = 1;
+			}
+			if (event.key.keysym.sym == SDLK_UP)
+			{
+				g_player_go_up = false;
+			}
+			if (event.key.keysym.sym == SDLK_DOWN)
+			{
+				g_player_go_down = false;
 			}
 
 			break;
@@ -239,49 +446,228 @@ void Update_Stage3()
 		ranMove();
 	}
 
-	if (g_input[0]) {
-		g_destination_rectangle_player.x -= 10;
-	}
-	else if (g_input[1]) {
-		g_destination_rectangle_player.x += 10;
+	if (g_player_go_left)
+	{
+		if ((g_destination_rectangle_player.y == IndextoY(702) - g_player_height && g_destination_rectangle_player.x > IndextoX(641)) ||
+			(g_destination_rectangle_player.y == IndextoY(574) - g_player_height && g_destination_rectangle_player.x > IndextoX(513)) ||
+			(g_destination_rectangle_player.y == IndextoY(446) - g_player_height && g_destination_rectangle_player.x > IndextoX(385)) ||
+			(g_destination_rectangle_player.y == IndextoY(318) - g_player_height && g_destination_rectangle_player.x > IndextoX(257)) ||
+			(g_destination_rectangle_player.y == IndextoY(190) - g_player_height && g_destination_rectangle_player.x > IndextoX(129)))
+		{
+			g_destination_rectangle_player.x -= 5;
+		}
 	}
 
-	if (g_input[2]) {
+	if (g_player_go_right)
+	{
+		if ((g_destination_rectangle_player.y == IndextoY(702) - g_player_height && g_destination_rectangle_player.x < IndextoX(670)) ||
+			(g_destination_rectangle_player.y == IndextoY(574) - g_player_height && g_destination_rectangle_player.x < IndextoX(542)) ||
+			(g_destination_rectangle_player.y == IndextoY(446) - g_player_height && g_destination_rectangle_player.x < IndextoX(414)) ||
+			(g_destination_rectangle_player.y == IndextoY(318) - g_player_height && g_destination_rectangle_player.x < IndextoX(286)) ||
+			(g_destination_rectangle_player.y == IndextoY(190) - g_player_height && g_destination_rectangle_player.x < IndextoX(158)))
+		{
+			g_destination_rectangle_player.x += 5;
+		}
+	}
+
+	if (g_player_go_up)
+	{
+		if ((g_destination_rectangle_player.x >= g_destination_rectangle_ladder[0].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[0].x + 5 &&
+			g_destination_rectangle_player.y > g_destination_rectangle_ladder[0].y - g_player_height && g_destination_rectangle_player.y <= IndextoY(688) - g_player_height) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[1].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[1].x + 5 &&
+				g_destination_rectangle_player.y > g_destination_rectangle_ladder[1].y - g_player_height && g_destination_rectangle_player.y <= IndextoY(573) - g_player_height) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[2].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[2].x + 5 &&
+				g_destination_rectangle_player.y > g_destination_rectangle_ladder[2].y - g_player_height && g_destination_rectangle_player.y <= IndextoY(427) - g_player_height) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[3].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[3].x + 5 &&
+				g_destination_rectangle_player.y > g_destination_rectangle_ladder[3].y - g_player_height && g_destination_rectangle_player.y <= IndextoY(311) - g_player_height))
+		{
+			onladder = true;
+			g_player_head = 2;
+			g_destination_rectangle_player.y -= 5;
+		}
+		else
+			onladder = false;
+	}
+
+	if (g_player_go_down)
+	{
+		if ((g_destination_rectangle_player.x >= g_destination_rectangle_ladder[0].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[0].x + 5 &&
+			g_destination_rectangle_player.y >= g_destination_rectangle_ladder[0].y - g_player_height && g_destination_rectangle_player.y < IndextoY(688) - g_player_height) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[1].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[1].x + 5 &&
+				g_destination_rectangle_player.y >= g_destination_rectangle_ladder[1].y - g_player_height && g_destination_rectangle_player.y < IndextoY(573) - g_player_height) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[2].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[2].x + 5 &&
+				g_destination_rectangle_player.y >= g_destination_rectangle_ladder[2].y - g_player_height && g_destination_rectangle_player.y < IndextoY(427) - g_player_height) ||
+			(g_destination_rectangle_player.x >= g_destination_rectangle_ladder[3].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[3].x + 5 &&
+				g_destination_rectangle_player.y >= g_destination_rectangle_ladder[3].y - g_player_height && g_destination_rectangle_player.y < IndextoY(311) - g_player_height))
+		{
+			onladder = true;
+			g_player_head = 2;
+			g_destination_rectangle_player.y += 5;
+		}
+		else
+			onladder = false;
+	}
+
+	if (isJump)
+	{
+		if (g_player_go_left && (g_destination_rectangle_player.x > IndextoX(641)))
+			g_destination_rectangle_player.x -= 5;
+		else if (g_player_go_right && (g_destination_rectangle_player.x < IndextoX(670)))
+			g_destination_rectangle_player.x += 5;
+
 		if (power > 0) {
-			g_destination_rectangle_player.y-= jumpSpeed;
-			power-= jumpSpeed;
+			g_destination_rectangle_player.y -= jumpSpeed;
+			power -= jumpSpeed;
 		}
 		else {
 			if (power <= -1 * Power + jumpSpeed) {
-				g_input[2] = false;
+				isJump = false;
 				power = Power + 1;
 			}
-		    power-= jumpSpeed;
-			g_destination_rectangle_player.y+= jumpSpeed;
+			power -= jumpSpeed;
+			g_destination_rectangle_player.y += jumpSpeed;
+		}
+	}
+
+	if (isShot) {
+		if (pointer_head == 0 && (g_destination_rectangle_pointer.x < IndextoX(670)) && (pointer_Pos.x + 100 > g_destination_rectangle_pointer.x))
+			g_destination_rectangle_pointer.x += 10;
+		else if (pointer_head == 1 && (g_destination_rectangle_pointer.x > IndextoX(641)) && (pointer_Pos.x - 100 < g_destination_rectangle_pointer.x))
+			g_destination_rectangle_pointer.x -= 10;
+		else
+			isShot = false;
+	}
+
+	// collision detection
+	// (1) player - monster
+	if (g_player_unbeatable) {
+		g_unbeatable_flag++;
+	}
+	if (g_unbeatable_flag > 40) {
+		g_player_unbeatable = false;
+		g_unbeatable_flag = 0;
+	}
+	int left, right, top, bottom;
+	for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++) {
+		if (iter->isAlive == false)
+			continue;
+
+		left = iter->pos.x;
+		right = iter->pos.x + g_monster_size;
+		top = iter->pos.y;
+		bottom = iter->pos.y + g_monster_size;
+
+		if (!((bottom < g_destination_rectangle_player.y) ||
+			(top > g_destination_rectangle_player.y + g_player_height) ||
+			(right < g_destination_rectangle_player.x) ||
+			(left > g_destination_rectangle_player.x + 25)) &&
+			g_player_unbeatable == false) {
+			g_player_heart -= 2;
+			g_player_unbeatable = true;
+			break;
+		}
+	}
+	for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++) {
+		if (iter->isAlive == false)
+			continue;
+
+		left = iter->pos.x;
+		right = iter->pos.x + g_monster_size;
+		top = iter->pos.y;
+		bottom = iter->pos.y + g_monster_size;
+
+		if (!((bottom < g_destination_rectangle_player.y) ||
+			(top > g_destination_rectangle_player.y + g_player_height) ||
+			(right < g_destination_rectangle_player.x) ||
+			(left > g_destination_rectangle_player.x + 25)) &&
+			g_player_unbeatable == false) {
+			g_player_heart -= 2;
+			g_player_unbeatable = true;
+			break;
+		}
+	}
+	// (2) pointer - monster
+	if (isShot) {
+		for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++) {
+			if (iter->isAlive == false)
+				continue;
+
+			left = iter->pos.x + 10;
+			right = iter->pos.x + g_monster_size - 10;
+			top = iter->pos.y + 10;
+			bottom = iter->pos.y + g_monster_size - 10;
+
+			if (!((bottom < g_destination_rectangle_pointer.y) ||
+				(top > g_destination_rectangle_pointer.y + 25) ||
+				(right < g_destination_rectangle_pointer.x) ||
+				(left > g_destination_rectangle_pointer.x + 25))) {
+				iter->isAlive = false;
+				isShot = false;
+				break;
+			}
+		}
+	}
+	if (isShot) {
+		for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++) {
+			if (iter->isAlive == false)
+				continue;
+
+			left = iter->pos.x + 10;
+			right = iter->pos.x + g_monster_size - 10;
+			top = iter->pos.y + 10;
+			bottom = iter->pos.y + g_monster_size - 10;
+
+			if (!((bottom < g_destination_rectangle_pointer.y) ||
+				(top > g_destination_rectangle_pointer.y + 25) ||
+				(right < g_destination_rectangle_pointer.x) ||
+				(left > g_destination_rectangle_pointer.x + 25))) {
+				iter->isAlive = false;
+				isShot = false;
+				break;
+			}
 		}
 	}
 
 	srand(time(NULL));
 	if (isMove) {
 		isMove = false;
-		ran = rand() % 3;
-		b_destination_rect.x = ranPos_x[ran];
-		b_destination_rect.y = ranPos_y[ran];
+
+		Pos b_prevRan_Pos;
+		b_prevRan_Pos.x = b_destination_rect.x;
+		b_prevRan_Pos.y = b_destination_rect.y;
+
+		ran = rand() % 2;
+		b_destination_rect.x = ranPos[ran].x;
+		b_destination_rect.y = ranPos[ran].y;
+
+		ranPos.erase(ranPos.begin() + ran, ranPos.begin() + ran + 1);
+		ranPos.push_back(b_prevRan_Pos);
 	}
 
-	for (auto iter = sub_M.begin(); iter != sub_M.end(); iter++) {
-		iter->Move();
+	for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++) {
+		if (iter->isAlive)
+			iter->Move();
+	}
+	for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++) {
+		if (iter->isAlive)
+			iter->Move();
 	}
 
-	if (checkCollision(g_destination_rectangle_player, b_attackDown_destination)) {
-		std::cout << "Attack" << std::endl;
+	for (auto iter = a_position.begin(); iter != a_position.end(); iter++) {
+		b_attackDown_rect.x = iter->x;
+		b_attackDown_rect.y = b_attackDown_destination.y;
+
+		if (checkCollision(g_destination_rectangle_player, b_attackDown_rect) && g_player_unbeatable == false) {
+			g_player_heart -= 2;
+			g_player_unbeatable = true;
+		}
 	}
 
-	if (checkCollision(b_destination_rect, player_attack_rect)) {
+	if (checkCollision(b_destination_rect, g_destination_rectangle_pointer)) {
 		isMove = true;
 		hp_B--;
-		std::cout << "Attack_B" << std::endl;
 	}
+	
 
 	g_elapsed_time_ms += 33;
 }
@@ -305,36 +691,83 @@ void Render_Stage3()
 		SDL_RenderFillRect(g_renderer, &r);
 	}
 
-	{
-		SDL_SetRenderDrawColor(g_renderer, 188, 229, 92, 255);
-
-		SDL_Rect player;
-		player.x = g_destination_rectangle_player.x;
-		player.y = g_destination_rectangle_player.y;
-		player.w = g_destination_rectangle_player.w;
-		player.h = g_destination_rectangle_player.h;
-
-		SDL_RenderFillRect(g_renderer, &player);
+	//ladder
+	for (int i = 0; i < 4; i++) {
+		SDL_RenderCopy(g_renderer, g_texture_ladder, &g_source_rectangle_ladder, &g_destination_rectangle_ladder[i]);
 	}
 
+	// link
+	SDL_RenderCopy(g_renderer, g_texture_link, &g_source_rectangle_link, &g_destination_rectangle_link);
+
+	// heart
+	g_destination_rectangle_heart = { 650, 75, 25, 25 };
+	int full_heart = g_player_heart / 2;
+	int half_heart = g_player_heart % 2;
+	int empty_heart = 10 - full_heart - half_heart;
+	for (int i = 0; i < 10; i++)
 	{
-		SDL_SetRenderDrawColor(g_renderer, 188, 229, 92, 255);
+		if (full_heart) {
+			SDL_RenderCopy(g_renderer, g_texture_heart, &g_source_rectangle_heart[0], &g_destination_rectangle_heart);
+			full_heart--;
+		}
+		else if (half_heart) {
+			SDL_RenderCopy(g_renderer, g_texture_heart, &g_source_rectangle_heart[1], &g_destination_rectangle_heart);
+			half_heart--;
+		}
+		else
+			SDL_RenderCopy(g_renderer, g_texture_heart, &g_source_rectangle_heart[2], &g_destination_rectangle_heart);
 
-		SDL_Rect boss;
-		boss.x = b_destination_rect.x;
-		boss.y = b_destination_rect.y;
-		boss.w = b_destination_rect.w;
-		boss.h = b_destination_rect.h;
-
-		SDL_RenderFillRect(g_renderer, &boss);
+		g_destination_rectangle_heart.x += 25;
+		if (g_destination_rectangle_heart.x > 750) {
+			g_destination_rectangle_heart.x = 650;
+			g_destination_rectangle_heart.y = 100;
+		}
 	}
 
+	//pointer
+	SDL_RenderCopy(g_renderer, g_texture_pointer50, &g_source_rectangle_pointer50, &g_destination_rectangle_pointer50);
 
-	for (auto iter = sub_M.begin(); iter != sub_M.end(); iter++) {
-		m_destination_rect.x = iter->pos.x;
-		m_destination_rect.y = iter->pos.y;
+	r.x = 75;
+	r.y = 75;
+	r.w = pointerNum_rect.w;
+	r.h = pointerNum_rect.h;
+	SDL_RenderCopy(g_renderer, pointerNum_text, &pointerNum_rect, &r);
 
-		SDL_RenderCopy(g_renderer, m_sheet_texture, &m_source_rect, &m_destination_rect);
+	if (isShot) {
+		if (pointer_head == 0)
+			SDL_RenderCopy(g_renderer, g_texture_pointer, &g_source_rectangle_pointer[0], &g_destination_rectangle_pointer);
+		else if (pointer_head == 1)
+			SDL_RenderCopy(g_renderer, g_texture_pointer, &g_source_rectangle_pointer[1], &g_destination_rectangle_pointer);
+	}
+
+	//sub_Monster
+	for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++) {
+		if (iter->isAlive == false)
+			continue;
+
+		g_destination_rectangle_monster.x = iter->pos.x;
+		g_destination_rectangle_monster.y = iter->pos.y;
+		g_destination_rectangle_monster.w = g_monster_size;
+		g_destination_rectangle_monster.h = g_monster_size;
+
+		if (iter->isRight)
+			SDL_RenderCopy(g_renderer, g_texture_monster, &g_source_rectangle_monster[1], &g_destination_rectangle_monster);
+		else
+			SDL_RenderCopy(g_renderer, g_texture_monster, &g_source_rectangle_monster[0], &g_destination_rectangle_monster);
+	}
+
+	for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++) {
+		if (iter->isAlive == false)
+			continue;
+		g_destination_rectangle_monster.x = iter->pos.x;
+		g_destination_rectangle_monster.y = iter->pos.y;
+		g_destination_rectangle_monster.w = g_monster_size;
+		g_destination_rectangle_monster.h = g_monster_size;
+
+		if (iter->isRight)
+			SDL_RenderCopy(g_renderer, g_texture_monster, &g_source_rectangle_monster[2], &g_destination_rectangle_monster);
+		else
+			SDL_RenderCopy(g_renderer, g_texture_monster, &g_source_rectangle_monster[3], &g_destination_rectangle_monster);
 	}
 
 	if (isTime) {
@@ -354,11 +787,65 @@ void Render_Stage3()
 		}
 	}
 
-	//Player
-	//SDL_RenderCopy(g_renderer, g_player_sheet_texture, &g_source_rectangle_player, &g_destination_rectangle_player);
+	// player
+	if (g_player_unbeatable) {
+		if (g_unbeatable_flag % 10 == 0) {
+			SDL_SetTextureColorMod(g_texture_player, 255, 255, 255);
+			SDL_SetTextureAlphaMod(g_texture_player, 255);
+		}
+		else {
+			SDL_SetTextureColorMod(g_texture_player, 255, 0, 0);
+			SDL_SetTextureAlphaMod(g_texture_player, 170);
+		}
+	}
+	else {
+		SDL_SetTextureColorMod(g_texture_player, 255, 255, 255);
+		SDL_SetTextureAlphaMod(g_texture_player, 255);
+	}
+	if (onladder) {
+		SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[9], &g_destination_rectangle_player);
+	}
+	else {
+		if (g_player_go_right) {
+			if (g_running_flag <= 10) {
+				SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[2], &g_destination_rectangle_player);
+				g_running_flag++;
+			}
+			else {
+				SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[3], &g_destination_rectangle_player);
+				g_running_flag++;
+				if (g_running_flag > 20)
+					g_running_flag = 1;
+			}
+		}
+		else if (g_player_go_left) {
+			if (g_running_flag <= 10) {
+				SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[6], &g_destination_rectangle_player);
+				g_running_flag++;
+			}
+			else {
+				SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[7], &g_destination_rectangle_player);
+				g_running_flag++;
+				if (g_running_flag > 20)
+					g_running_flag = 1;
+			}
+		}
+		else if (isShot) {
+			if (g_player_head == 0)
+				SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[4], &g_destination_rectangle_player);
+			else if (g_player_head == 1)
+				SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[5], &g_destination_rectangle_player);
+		}
+		else if (g_player_head == 0)
+			SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[1], &g_destination_rectangle_player);
+		else if (g_player_head == 1)
+			SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[8], &g_destination_rectangle_player);
+		else if (g_player_head == 2)
+			SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[0], &g_destination_rectangle_player);
+	}
 
 	//boss
-	//SDL_RenderCopy(g_renderer, b_sheet_texture, &b_source_rect, &b_destination_rect);
+	SDL_RenderCopy(g_renderer, b_sheet_texture, &b_source_rect, &b_destination_rect);
 
 	SDL_RenderPresent(g_renderer);
 }
@@ -367,6 +854,6 @@ void Render_Stage3()
 
 void Clear_Stage3()
 {
-	SDL_DestroyTexture(g_player_sheet_texture);
+	SDL_DestroyTexture(g_texture_player);
 }
 
