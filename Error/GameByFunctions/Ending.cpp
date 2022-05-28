@@ -1,11 +1,64 @@
-
 #include "GameFunc.h"
 #include "Ending.h"
+
+using namespace std;
+
+// success
+SDL_Rect g_success_source_rect;
+SDL_Rect g_success_destination_rect;
+SDL_Texture* g_success_texture;
+
+// fail
+SDL_Rect g_fail_source_rect;
+SDL_Rect g_fail_destination_rect;
+SDL_Texture* g_fail_texture;
+
+// success music
+Mix_Music* g_success_bg_music;
+
+// failure chunk
+Mix_Chunk* g_fail_chunk;
 
 
 
 void Init_Ending()
 {
+	g_fail_chunk = Mix_LoadWAV("../../Resources/failure.MP3");
+	g_success_bg_music = Mix_LoadMUS("../../Resources/bgm2.mp3");
+
+
+	// sucess
+	SDL_Surface* success_surface = IMG_Load("../../gameclear.png");
+	g_success_texture = SDL_CreateTextureFromSurface(g_renderer, success_surface);
+	SDL_FreeSurface(success_surface);
+
+	g_success_source_rect.x = 0;
+	g_success_source_rect.y = 0;
+	g_success_source_rect.w = 800;
+	g_success_source_rect.h = 700;
+
+	g_success_destination_rect.x = 0;
+	g_success_destination_rect.y = 0;
+	g_success_destination_rect.w = 800;
+	g_success_destination_rect.h = 700;
+
+
+
+	// fail
+	SDL_Surface* failure_surface = IMG_Load("../../gameover.png");
+	g_fail_texture = SDL_CreateTextureFromSurface(g_renderer, failure_surface);
+	SDL_FreeSurface(failure_surface);
+
+	g_fail_source_rect.x = 0;
+	g_fail_source_rect.y = 0;
+	g_fail_source_rect.w = 800;
+	g_fail_source_rect.h = 700;
+
+	g_fail_destination_rect.x = 0;
+	g_fail_destination_rect.y = 0;
+	g_fail_destination_rect.w = 800;
+	g_fail_destination_rect.h = 700;
+
 }
 
 void Update_Ending()
@@ -15,6 +68,15 @@ void Update_Ending()
 
 void Render_Ending()
 {
+	SDL_RenderClear(g_renderer);
+
+	// 성공
+	SDL_RenderCopy(g_renderer, g_success_texture, &g_success_source_rect, &g_success_destination_rect);
+	
+	// 실패
+	SDL_RenderCopy(g_renderer, g_fail_texture, &g_fail_source_rect, &g_fail_destination_rect);
+
+
 }
 
 
@@ -48,4 +110,9 @@ void HandleEvents_Ending()
 
 void Clear_Ending()
 {
+	SDL_DestroyTexture(g_success_texture);
+	SDL_DestroyTexture(g_fail_texture);
+	Mix_FreeMusic(g_success_bg_music);
+	Mix_FreeChunk(g_fail_chunk);
+
 }
