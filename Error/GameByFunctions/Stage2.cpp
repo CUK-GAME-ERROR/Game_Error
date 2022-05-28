@@ -467,8 +467,10 @@ void Update_Stage2()
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
 			g_player_heart -= 2;
-			if (g_player_heart <= 0)
-				g_current_game_phase = PHASE_STAGE1;
+			if (g_player_heart <= 0) {
+				g_game_ending = 0;
+				g_current_game_phase = PHASE_ENDING;
+			}
 			g_player_unbeatable = true;
 			break;
 		}
@@ -488,8 +490,10 @@ void Update_Stage2()
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
 			g_player_heart -= 2;
-			if (g_player_heart <= 0)
-				g_current_game_phase = PHASE_STAGE1;
+			if (g_player_heart <= 0) {
+				g_game_ending = 0;
+				g_current_game_phase = PHASE_ENDING;
+			}
 			g_player_unbeatable = true;
 			break;
 		}
@@ -553,8 +557,10 @@ void Update_Stage2()
 				(g_destination_rectangle_player.y + g_destination_rectangle_player.h == ground[i].y))
 			{
 				g_player_heart -= 1;
-				if (g_player_heart <= 0)
-					g_current_game_phase = PHASE_STAGE1;
+				if (g_player_heart <= 0) {
+					g_game_ending = 0;
+					g_current_game_phase = PHASE_ENDING;
+				}
 				g_player_unbeatable = true;
 				isFall = false;
 				break;
@@ -807,6 +813,11 @@ void HandleEvents_Stage2()
 						pointer_num--;
 					}
 				}
+
+				if (event.key.keysym.sym == SDLK_n)
+				{
+					g_current_game_phase = PHASE_STAGE3;
+				}
 			}
 			break;
 
@@ -836,7 +847,7 @@ void HandleEvents_Stage2()
 			// If the mouse left button is pressed. 
 			if (event.button.button == SDL_BUTTON_LEFT)
 			{
-				g_current_game_phase = PHASE_STAGE3;
+
 			}
 			break;
 

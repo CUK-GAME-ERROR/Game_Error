@@ -23,6 +23,9 @@ int g_current_game_phase;
 // Player stamina
 int g_player_heart;
 
+// Game ending
+int g_game_ending;
+
 
 int main(int argc, char* argv[])
 {
