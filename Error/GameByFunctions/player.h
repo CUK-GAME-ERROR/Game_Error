@@ -118,7 +118,9 @@ inline std::vector<Pos> Init_Map()
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 161; i <= 171; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 176; i <= 187; i++)
+	for (int i = 174; i <= 174; i++)
+		map.push_back({ IndextoX(i), IndextoY(i) });
+	for (int i = 177; i <= 188; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 289; i <= 294; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
@@ -134,12 +136,74 @@ inline std::vector<Pos> Init_Map()
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 545; i <= 553; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
-	for (int i = 558; i <= 562; i++)
+	for (int i = 557; i <= 563; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
 	for (int i = 567; i <= 574; i++)
 		map.push_back({ IndextoX(i), IndextoY(i) });
 
 	return map;
+}
+
+inline std::vector<Pos> Init_Ground()
+{
+	static std::vector<Pos> ground;
+
+	for (int i = IndextoX(673); i <= IndextoX(702); i += 5)
+		ground.push_back({ i, IndextoY(673) });
+	for (int i = IndextoX(545); i < IndextoX(554); i += 5)
+		ground.push_back({ i, IndextoY(545) });
+	for (int i = IndextoX(556) + 5; i < IndextoX(564); i += 5)
+		ground.push_back({ i, IndextoY(545) });
+	for (int i = IndextoX(566) + 5; i <= IndextoX(574); i += 5)
+		ground.push_back({ i, IndextoY(545) });
+	for (int i = IndextoX(421) + 5; i < IndextoX(431); i += 5)
+		ground.push_back({ i, IndextoY(417) });
+	for (int i = IndextoX(433) + 5; i <= IndextoX(446); i += 5)
+		ground.push_back({ i, IndextoY(417) });
+	for (int i = IndextoX(289); i < IndextoX(295); i += 5)
+		ground.push_back({ i, IndextoY(289) });
+	for (int i = IndextoX(297) + 5; i < IndextoX(307); i += 5)
+		ground.push_back({ i, IndextoY(289) });
+	for (int i = IndextoX(309) + 5; i < IndextoX(313); i += 5)
+		ground.push_back({ i, IndextoY(289) });
+	for (int i = IndextoX(315) + 5; i <= IndextoX(318); i += 5)
+		ground.push_back({ i, IndextoY(289) });
+	for (int i = IndextoX(161); i < IndextoX(172); i += 5)
+		ground.push_back({ i, IndextoY(161) });
+	for (int i = IndextoX(173) + 5; i < IndextoX(175); i += 5)
+		ground.push_back({ i, IndextoY(161) });
+	for (int i = IndextoX(176) + 5; i < IndextoX(189); i += 5)
+		ground.push_back({ i, IndextoY(161) });
+
+	return ground;
+}
+
+inline std::vector<Pos> Init_Hole()
+{
+	static std::vector<Pos> hole;
+
+	for (int i = IndextoX(554); i <= IndextoX(556); i += 5)
+		hole.push_back({ i, IndextoY(545) });
+	for (int i = IndextoX(564); i <= IndextoX(566); i += 5)
+		hole.push_back({ i, IndextoY(545) });
+	for (int i = IndextoX(417); i <= IndextoX(421); i += 5)
+		hole.push_back({ i, IndextoY(417) });
+	for (int i = IndextoX(431); i <= IndextoX(433); i += 5)
+		hole.push_back({ i, IndextoY(417) });
+	for (int i = IndextoX(295); i <= IndextoX(297); i += 5)
+		hole.push_back({ i, IndextoY(289) });
+	for (int i = IndextoX(307); i <= IndextoX(309); i += 5)
+		hole.push_back({ i, IndextoY(289) });
+	for (int i = IndextoX(313); i <= IndextoX(315); i += 5)
+		hole.push_back({ i, IndextoY(289) });
+	for (int i = IndextoX(172); i <= IndextoX(173); i += 5)
+		hole.push_back({ i, IndextoY(161) });
+	for (int i = IndextoX(175); i <= IndextoX(176); i += 5)
+		hole.push_back({ i, IndextoY(161) });
+	for (int i = IndextoX(189); i <= IndextoX(190); i += 5)
+		hole.push_back({ i, IndextoY(161) });
+
+	return hole;
 }
 
 inline bool checkCollision(SDL_Rect a, SDL_Rect b) {

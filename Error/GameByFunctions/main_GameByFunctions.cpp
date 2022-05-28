@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 		std::cout << "Mix_OpenAudio " << Mix_GetError() << std::endl;
 		exit(1);
 	}
-	
+
 	g_window = SDL_CreateWindow("ERROR", 100, 100, 800, 700, 0);
 	g_renderer = SDL_CreateRenderer(g_window, -1, 0);
 
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 		g_last_time_ms = cur_time_ms;
 
 	}
-	
+
 	Clear_Intro();
 	Clear_Stage1();
 	Clear_Stage2();
@@ -102,5 +102,3 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-
-
