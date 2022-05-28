@@ -69,8 +69,6 @@ static int g_monster_size;
 static int itemNum = 11;
 static std::list<Item> item;
 static std::vector<Pos> item_Pos;
-static int coffeeNum;
-static int energydrinkNum;
 
 static SDL_Texture* g_texture_item;
 static SDL_Rect g_source_rectangle_item[2];
@@ -106,7 +104,35 @@ static Mix_Chunk* g_failure_sound;
 
 static Mix_Music* g_bgm_stage3;
 
+void Reset_Stage2()
+{
+	g_destination_rectangle_player.x = IndextoX(670);
+	g_destination_rectangle_player.y = IndextoY(702) - g_player_height;
 
+	g_player_go_left = false;
+	g_player_go_right = false;
+	g_player_go_up = false;
+	g_player_go_down = false;
+	isJump = false;
+	isFall = false;
+	isShot = false;
+	onladder = false;
+	g_player_unbeatable = false;
+
+	g_player_head = 1;
+	g_running_flag = 1;
+	pointer_num = 10;
+
+	time_ms_ = 0;
+
+	for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++)
+		iter->isAlive = true;
+	for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++)
+		iter->isAlive = true;
+
+	for (auto iter = item.begin(); iter != item.end(); iter++)
+		iter->drink = false;
+}
 
 void Init_Stage2()
 {
@@ -280,9 +306,6 @@ void Init_Stage2()
 	for(int i=6;i<itemNum;i++)
 		item.push_back(Item(item_Pos[i], 1));
 
-	coffeeNum = 0;
-	energydrinkNum = 0;
-
 	// link
 	SDL_Surface* link_surface = IMG_Load("../../Resources/link.png");
 	g_texture_link = SDL_CreateTextureFromSurface(g_renderer, link_surface);
@@ -451,13 +474,11 @@ void Update_Stage2()
 				if (iter->type == 0) {
 					iter->drink = true;
 					Mix_PlayChannel(-1, g_drink_sound, 0);
-					coffeeNum++;
 					g_player_heart += 1;
 				}
 				else if (iter->type == 1) {
 					iter->drink = true;
 					Mix_PlayChannel(-1, g_drink_sound, 0);
-					energydrinkNum++;
 					g_player_heart += 2;
 				}
 			}
@@ -491,6 +512,7 @@ void Update_Stage2()
 			g_player_heart -= 2;
 			Mix_PlayChannel(-1, g_attack_sound, 0);
 			if (g_player_heart <= 0) {
+				Reset_Stage2();
 				g_game_ending = 0;
 				g_current_game_phase = PHASE_ENDING;
 				Mix_PlayChannel(-1, g_failure_sound, 0);
@@ -516,6 +538,7 @@ void Update_Stage2()
 			g_player_heart -= 2;
 			Mix_PlayChannel(-1, g_attack_sound, 0);
 			if (g_player_heart <= 0) {
+				Reset_Stage2();
 				g_game_ending = 0;
 				g_current_game_phase = PHASE_ENDING;
 				Mix_PlayChannel(-1, g_failure_sound, 0);
@@ -587,6 +610,7 @@ void Update_Stage2()
 				g_player_heart -= 1;
 				Mix_PlayChannel(-1, g_attack_sound, 0);
 				if (g_player_heart <= 0) {
+					Reset_Stage2();
 					g_game_ending = 0;
 					g_current_game_phase = PHASE_ENDING;
 					Mix_PlayChannel(-1, g_failure_sound, 0);
@@ -752,6 +776,7 @@ void Render_Stage2()
 
 	if (g_destination_rectangle_timeG.w == 0)
 	{
+		Reset_Stage2();
 		Mix_PlayMusic(g_bgm_stage3, -1);
 		g_current_game_phase = PHASE_STAGE3;
 	}
@@ -850,6 +875,7 @@ void HandleEvents_Stage2()
 
 				if (event.key.keysym.sym == SDLK_n)
 				{
+					Reset_Stage2();
 					g_current_game_phase = PHASE_STAGE3;
 					Mix_PlayMusic(g_bgm_stage3, -1);
 				}
