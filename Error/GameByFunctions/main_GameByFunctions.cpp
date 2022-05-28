@@ -20,6 +20,9 @@ Uint32 g_last_time_ms;
 // Game Phases
 int g_current_game_phase;
 
+// Player stamina
+int g_player_heart;
+
 
 int main(int argc, char* argv[])
 {

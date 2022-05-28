@@ -22,3 +22,4 @@ extern int g_current_game_phase;
 extern bool g_flag_running;
 extern SDL_Renderer* g_renderer;
 extern SDL_Window* g_window;
+extern int g_player_heart; // 2 g_player_heart = 1 heart in game

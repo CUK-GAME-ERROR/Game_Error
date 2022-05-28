@@ -18,7 +18,6 @@ static SDL_Rect g_destination_rectangle_heart;
 static int g_player_height;
 static int g_player_head; // 0:right, 1:left, 2: front
 static int g_running_flag; // 1~10, 11~20
-static int g_player_heart; // 1 heart = 2 g_player_heart
 static bool g_player_unbeatable;
 static int g_unbeatable_flag;
 
