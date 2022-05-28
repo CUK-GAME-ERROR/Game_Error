@@ -34,15 +34,15 @@ int intro_state;	// 1 : intro 1
 void Init_Intro()
 {
 	intro_state = 1;
-
+	/*
 	// bg music
-	g_intro_bg_music = Mix_LoadMUS("../../Resources/bgm1.mp3");
+	g_intro_bg_music = Mix_LoadMUS("../../Resources/intro.mp3");
 	if (g_intro_bg_music == 0) {
 		std::cout << "Mix_LoadMUS(\"intro_bg_music.mp3\"): " << Mix_GetError() << std::endl;
 	}
 	Mix_VolumeMusic(60);
 	Mix_FadeInMusic(g_intro_bg_music, -1, 2000);
-
+	*/
 
 	// intro 1
 	SDL_Surface* intro1_surface = IMG_Load("../../Resources/intro1.png");
