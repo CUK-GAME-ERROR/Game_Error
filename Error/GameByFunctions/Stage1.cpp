@@ -56,6 +56,8 @@ static std::string answer_password_ = "";
 static SDL_Color red;
 static SDL_Color black;
 
+static Mix_Music* g_bgm_stage2;
+
 
 void Init_Stage1()
 {
@@ -158,6 +160,8 @@ void Init_Stage1()
 	typing_destination_rectangle_[1].y = 500;
 
 	SDL_StartTextInput();
+
+	g_bgm_stage2 = Mix_LoadMUS("../../Resources/stage2.mp3");
 }
 
 void Update_Answer()
@@ -254,6 +258,7 @@ void Update_Stage1()
 					alpha = 0;
 					SDL_StopTextInput();
 					g_current_game_phase = PHASE_STAGE2;
+					Mix_PlayMusic(g_bgm_stage2, -1);
 				}
 			}
 		}
@@ -534,5 +539,6 @@ void Clear_Stage1()
 	SDL_DestroyTexture(answer_id_texture_);
 	SDL_DestroyTexture(answer_password_texture_);
 	SDL_DestroyTexture(typing_);
+	Mix_FreeMusic(g_bgm_stage2);
 }
 

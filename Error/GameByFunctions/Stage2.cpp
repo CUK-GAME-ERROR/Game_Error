@@ -85,8 +85,8 @@ static Pos pointer_Pos;
 static int pointer_head;
 static bool isShot;
 
-TTF_Font* font;
-SDL_Color black;
+static TTF_Font* font;
+static SDL_Color black;
 
 static SDL_Texture* g_texture_pointer50;
 static SDL_Rect g_source_rectangle_pointer50;
@@ -97,6 +97,15 @@ static SDL_Rect pointerNum_rect;
 static SDL_Texture* g_texture_link;
 static SDL_Rect g_source_rectangle_link;
 static SDL_Rect g_destination_rectangle_link;
+
+static Mix_Chunk* g_shooting_sound;
+static Mix_Chunk* g_hit_sound;
+static Mix_Chunk* g_attack_sound;
+static Mix_Chunk* g_drink_sound;
+static Mix_Chunk* g_failure_sound;
+
+static Mix_Music* g_bgm_stage3;
+
 
 
 void Init_Stage2()
@@ -290,6 +299,17 @@ void Init_Stage2()
 	// text
 	font = TTF_OpenFont("../../Resources/DungGeunMo.ttf", 50);
 	black = { 0, 0, 0, 255 };
+
+	// sound
+	g_bgm_stage3 = Mix_LoadMUS("../../Resources/stage3.mp3");
+
+	g_shooting_sound = Mix_LoadWAV("../../Resources/shooting.mp3");
+	g_hit_sound = Mix_LoadWAV("../../Resources/hit.wav");
+	g_attack_sound = Mix_LoadWAV("../../Resources/attack.mp3");
+	g_drink_sound = Mix_LoadWAV("../../Resources/drink.mp3");
+	Mix_VolumeChunk(g_drink_sound, 50);
+	g_failure_sound = Mix_LoadWAV("../../Resources/failure.mp3");
+	Mix_VolumeChunk(g_failure_sound, 50);
 }
 
 void Update_pointerNum()
@@ -430,11 +450,13 @@ void Update_Stage2()
 				g_destination_rectangle_player.y + g_player_height == iter->pos.y + g_item_size) {
 				if (iter->type == 0) {
 					iter->drink = true;
+					Mix_PlayChannel(-1, g_drink_sound, 0);
 					coffeeNum++;
 					g_player_heart += 1;
 				}
 				else if (iter->type == 1) {
 					iter->drink = true;
+					Mix_PlayChannel(-1, g_drink_sound, 0);
 					energydrinkNum++;
 					g_player_heart += 2;
 				}
@@ -467,9 +489,11 @@ void Update_Stage2()
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
 			g_player_heart -= 2;
+			Mix_PlayChannel(-1, g_attack_sound, 0);
 			if (g_player_heart <= 0) {
 				g_game_ending = 0;
 				g_current_game_phase = PHASE_ENDING;
+				Mix_PlayChannel(-1, g_failure_sound, 0);
 			}
 			g_player_unbeatable = true;
 			break;
@@ -490,9 +514,11 @@ void Update_Stage2()
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
 			g_player_heart -= 2;
+			Mix_PlayChannel(-1, g_attack_sound, 0);
 			if (g_player_heart <= 0) {
 				g_game_ending = 0;
 				g_current_game_phase = PHASE_ENDING;
+				Mix_PlayChannel(-1, g_failure_sound, 0);
 			}
 			g_player_unbeatable = true;
 			break;
@@ -513,6 +539,7 @@ void Update_Stage2()
 				(top > g_destination_rectangle_pointer.y + 25) ||
 				(right < g_destination_rectangle_pointer.x) ||
 				(left > g_destination_rectangle_pointer.x + 25))) {
+				Mix_PlayChannel(-1, g_hit_sound, 0);
 				iter->isAlive = false;
 				isShot = false;
 				break;
@@ -533,6 +560,7 @@ void Update_Stage2()
 				(top > g_destination_rectangle_pointer.y + 25) ||
 				(right < g_destination_rectangle_pointer.x) ||
 				(left > g_destination_rectangle_pointer.x + 25))) {
+				Mix_PlayChannel(-1, g_hit_sound, 0);
 				iter->isAlive = false;
 				isShot = false;
 				break;
@@ -557,9 +585,11 @@ void Update_Stage2()
 				(g_destination_rectangle_player.y + g_destination_rectangle_player.h == ground[i].y))
 			{
 				g_player_heart -= 1;
+				Mix_PlayChannel(-1, g_attack_sound, 0);
 				if (g_player_heart <= 0) {
 					g_game_ending = 0;
 					g_current_game_phase = PHASE_ENDING;
+					Mix_PlayChannel(-1, g_failure_sound, 0);
 				}
 				g_player_unbeatable = true;
 				isFall = false;
@@ -720,8 +750,11 @@ void Render_Stage2()
 	SDL_RenderCopy(g_renderer, g_texture_timeG, &g_source_rectangle_timeG, &g_destination_rectangle_timeG);
 	SDL_RenderCopy(g_renderer, g_texture_timer, &g_source_rectangle_timer, &g_destination_rectangle_timer);
 
-	if(g_destination_rectangle_timeG.w == 0)
+	if (g_destination_rectangle_timeG.w == 0)
+	{
+		Mix_PlayMusic(g_bgm_stage3, -1);
 		g_current_game_phase = PHASE_STAGE3;
+	}
 
 	// link
 	SDL_RenderCopy(g_renderer, g_texture_link, &g_source_rectangle_link, &g_destination_rectangle_link);
@@ -804,6 +837,7 @@ void HandleEvents_Stage2()
 				if (event.key.keysym.sym == SDLK_z)
 				{
 					if (!onladder && !isShot && !(g_player_head == 2) && pointer_num != 0) {
+						Mix_PlayChannel(-1, g_shooting_sound, 0);
 						isShot = true;
 						g_destination_rectangle_pointer.x = g_destination_rectangle_player.x;
 						g_destination_rectangle_pointer.y = g_destination_rectangle_player.y;
@@ -817,6 +851,7 @@ void HandleEvents_Stage2()
 				if (event.key.keysym.sym == SDLK_n)
 				{
 					g_current_game_phase = PHASE_STAGE3;
+					Mix_PlayMusic(g_bgm_stage3, -1);
 				}
 			}
 			break;
@@ -873,5 +908,11 @@ void Clear_Stage2()
 	SDL_DestroyTexture(g_texture_heart);
 	SDL_DestroyTexture(g_texture_link);
 	SDL_DestroyTexture(pointerNum_text);
+	Mix_FreeChunk(g_shooting_sound);
+	Mix_FreeChunk(g_hit_sound);
+	Mix_FreeChunk(g_attack_sound);
+	Mix_FreeChunk(g_drink_sound);
+	Mix_FreeChunk(g_failure_sound);
+	Mix_FreeMusic(g_bgm_stage3);
 }
 
