@@ -56,6 +56,7 @@ static std::string answer_password_ = "";
 static SDL_Color red;
 static SDL_Color black;
 
+
 void Init_Stage1()
 {
 	character_state_ = 0;
