@@ -23,13 +23,23 @@ SDL_Rect g_button_source_rect;
 SDL_Rect g_button_destination_rect;
 SDL_Texture* g_button_texture;
 
+// test
+SDL_Rect g_test_source_rect;
+SDL_Rect g_test_destination_rect;
+SDL_Texture* g_test_texture;
+
+// test2
+SDL_Rect g_test2_source_rect;
+SDL_Rect g_test2_destination_rect;
+SDL_Texture* g_test2_texture;
+
 // Music
 Mix_Music* g_intro_bg_music;
 
 // intro state 
-int intro_state;	// 1 : intro 1
-						// 2 : intro 2
-						// 3 : title & start
+int intro_state;		// 1 : title & start
+						// 2 : intro 1
+						// 3 : intro 2
 
 void Init_Intro()
 {
@@ -106,6 +116,37 @@ void Init_Intro()
 	g_button_destination_rect.y = 410;
 	g_button_destination_rect.w = 180;
 	g_button_destination_rect.h = 180;
+
+
+	// test
+	SDL_Surface* test_surface = IMG_Load("../../Resources/introtest.png");
+	g_test_texture = SDL_CreateTextureFromSurface(g_renderer, test_surface);
+	SDL_FreeSurface(test_surface);
+
+	g_test_source_rect.x = 0;
+	g_test_source_rect.y = 0;
+	g_test_source_rect.w = 1818;
+	g_test_source_rect.h = 1403;
+
+	g_test_destination_rect.x = 100;
+	g_test_destination_rect.y = 100;
+	g_test_destination_rect.w = 550;
+	g_test_destination_rect.h = 450;
+
+	// test
+	SDL_Surface* test2_surface = IMG_Load("../../Resources/introtest2.png");
+	g_test2_texture = SDL_CreateTextureFromSurface(g_renderer, test2_surface);
+	SDL_FreeSurface(test2_surface);
+
+	g_test2_source_rect.x = 0;
+	g_test2_source_rect.y = 0;
+	g_test2_source_rect.w = 2159;
+	g_test2_source_rect.h = 1810;
+
+	g_test2_destination_rect.x = 100;
+	g_test2_destination_rect.y = 100;
+	g_test2_destination_rect.w = 550;
+	g_test2_destination_rect.h = 450;
 }
 
 void Update_Intro()
@@ -119,15 +160,17 @@ void Render_Intro()
 	SDL_RenderClear(g_renderer);
 
 
-	if (intro_state == 1)
-		SDL_RenderCopy(g_renderer, g_intro1_texture, &g_intro1_source_rect, &g_intro1_destination_rect);
-	else if (intro_state == 2)
-		SDL_RenderCopy(g_renderer, g_intro2_texture, &g_intro2_source_rect, &g_intro2_destination_rect);
-	else if (intro_state == 3) {
+	if (intro_state == 1) {
 		SDL_SetRenderDrawColor(g_renderer, 180, 199, 231, 255);
-		SDL_RenderCopy(g_renderer, g_title_texture, &g_title_source_rect, &g_title_destination_rect);
-		SDL_RenderCopy(g_renderer, g_button_texture, &g_button_source_rect, &g_button_destination_rect);
+		//SDL_RenderCopy(g_renderer, g_title_texture, &g_title_source_rect, &g_title_destination_rect);
+		SDL_RenderCopy(g_renderer, g_test_texture, &g_test_source_rect, &g_test_destination_rect);
+		SDL_RenderCopy(g_renderer, g_test2_texture, &g_test2_source_rect, &g_test2_destination_rect);
 
+	}
+	else if (intro_state == 2)
+		SDL_RenderCopy(g_renderer, g_intro1_texture, &g_intro1_source_rect, &g_intro1_destination_rect);
+	else if (intro_state == 3) {
+		SDL_RenderCopy(g_renderer, g_intro2_texture, &g_intro2_source_rect, &g_intro2_destination_rect);
 	}
 
 
@@ -157,15 +200,6 @@ void HandleEvents_Intro()
 				int mouse_x = event.button.x;
 				int mouse_y = event.button.y;
 
-				if (intro_state == 3 &&
-					mouse_x > g_button_destination_rect.x &&
-					mouse_y > g_button_destination_rect.y &&
-					mouse_x < g_button_destination_rect.x + g_button_destination_rect.w &&
-					mouse_y < g_button_destination_rect.y + g_button_destination_rect.h)
-				{
-					Mix_FreeMusic(g_intro_bg_music);
-					g_current_game_phase = PHASE_STAGE1;
-				}
 			}
 			break;
 
@@ -174,9 +208,11 @@ void HandleEvents_Intro()
 				if (intro_state == 1) {
 					intro_state = 2;
 				}
-					
 				else if (intro_state == 2) {
 					intro_state = 3;
+				}
+				else if (intro_state == 3) {
+					g_current_game_phase = PHASE_STAGE1;
 				}
 					
 			}
