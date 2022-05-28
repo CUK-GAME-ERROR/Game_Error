@@ -28,7 +28,7 @@ void Init_Ending()
 
 
 	// sucess
-	SDL_Surface* success_surface = IMG_Load("../../resources/gameclear.png");
+	SDL_Surface* success_surface = IMG_Load("../../Resources/gameclear.png");
 	g_success_texture = SDL_CreateTextureFromSurface(g_renderer, success_surface);
 	SDL_FreeSurface(success_surface);
 
@@ -45,7 +45,7 @@ void Init_Ending()
 
 
 	// fail
-	SDL_Surface* failure_surface = IMG_Load("../../resources/gameover.png");
+	SDL_Surface* failure_surface = IMG_Load("../../Resources/gameover.png");
 	g_fail_texture = SDL_CreateTextureFromSurface(g_renderer, failure_surface);
 	SDL_FreeSurface(failure_surface);
 
