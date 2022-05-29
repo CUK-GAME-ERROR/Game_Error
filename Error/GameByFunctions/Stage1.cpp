@@ -6,9 +6,15 @@ static SDL_Texture* bg_texture_stage1_; // the SDL_Texture
 static SDL_Rect bg_source_rectangle_stage1_; // the rectangle for source image
 static SDL_Rect bg_destination_rectangle_stage1_; // for destination
 
+static SDL_Texture* intro_stage1_;
+static SDL_Rect intro_rectangle_stage1_;
+static SDL_Rect intro_destination_rectangle_stage1_;
+
 static SDL_Texture* character_stage1_;
 static SDL_Rect character_source_rectangle_stage1_[8];
 static SDL_Rect character_destination_rectangle_stage1_;
+
+bool get_intro_;
 
 static SDL_Rect escape_;
 
@@ -23,9 +29,13 @@ static SDL_Texture* hint_fake_;
 static SDL_Rect hint_fake_texture_rectangle_;
 static SDL_Rect hint_fake_destination_rectangle_;
 
+static std::string answer_id_ = "";
+
 static SDL_Texture* answer_id_texture_;
 static SDL_Rect answer_id_texture_rectangle_;
 static SDL_Rect answer_id_destination_rectangle_;
+
+static std::string answer_password_ = "";
 
 static SDL_Texture* answer_password_texture_;
 static SDL_Rect answer_password_texture_rectangle_;
@@ -50,13 +60,13 @@ static bool typing;
 
 static int alpha;
 
-static std::string answer_id_ = "";
-static std::string answer_password_ = "";
-
 static SDL_Color red;
 static SDL_Color black;
 
 static Mix_Music* g_bgm_stage2;
+static Mix_Chunk* interact_sound_;
+static Mix_Chunk* correct_sound_;
+static Mix_Chunk* wrong_sound_;
 
 
 void Init_Stage1()
@@ -73,6 +83,7 @@ void Init_Stage1()
 	for (int i = 0; i < 4; i++)
 		interact[i] = false;
 	typing = false;
+	get_intro_ = true;
 
 	// For Texture
 
@@ -87,6 +98,14 @@ void Init_Stage1()
 	bg_destination_rectangle_stage1_.y = 0;
 	bg_destination_rectangle_stage1_.w = bg_source_rectangle_stage1_.w;
 	bg_destination_rectangle_stage1_.h = bg_source_rectangle_stage1_.h;
+
+	SDL_Surface* tmp_intro_stage1_surface = IMG_Load("../../Resources/stage1_intro.png");
+	intro_stage1_ = SDL_CreateTextureFromSurface(g_renderer, tmp_intro_stage1_surface);
+	SDL_FreeSurface(tmp_intro_stage1_surface);
+
+	SDL_QueryTexture(intro_stage1_, NULL, NULL, &intro_rectangle_stage1_.w, &intro_rectangle_stage1_.h);
+	intro_rectangle_stage1_.x = intro_rectangle_stage1_.y = 0;
+	intro_destination_rectangle_stage1_ = { 100, 100, 600, 500 };
 
 	SDL_Surface* temp_ch_surface = IMG_Load("../../Resources/Player.png");
 	character_stage1_ = SDL_CreateTextureFromSurface(g_renderer, temp_ch_surface);
@@ -106,9 +125,9 @@ void Init_Stage1()
 	character_destination_rectangle_stage1_.w = 60;
 	character_destination_rectangle_stage1_.h = 60;
 
-	escape_ = { 706, 610, 80, 0 };
+	escape_ = { 706, 600, 80, 0 };
 
-	hint_font_ = TTF_OpenFont("../../Resources/DungGeunMo.ttf", 20);
+	hint_font_ = TTF_OpenFont("../../Resources/DungGeunMo.ttf", 25);
 	red = { 255, 0, 0, 0 };
 	black = { 0, 0, 0, 0 };
 
@@ -118,8 +137,8 @@ void Init_Stage1()
 	hint_id_texture_rectangle_.w = tmp_hint_id_surface->w;
 	hint_id_texture_rectangle_.h = tmp_hint_id_surface->h;
 	SDL_FreeSurface(tmp_hint_id_surface);
-	hint_id_destination_rectangle_.x = 170;
-	hint_id_destination_rectangle_.y = 615;
+	hint_id_destination_rectangle_.x = 110;
+	hint_id_destination_rectangle_.y = 600;
 	hint_id_destination_rectangle_.w = hint_id_texture_rectangle_.w;
 	hint_id_destination_rectangle_.h = hint_id_texture_rectangle_.h;
 
@@ -130,7 +149,7 @@ void Init_Stage1()
 	hint_password_texture_rectangle_.h = tmp_hint_password_surface->h;
 	SDL_FreeSurface(tmp_hint_password_surface);
 	hint_password_destination_rectangle_.x = 300;
-	hint_password_destination_rectangle_.y = 195;
+	hint_password_destination_rectangle_.y = 105;
 	hint_password_destination_rectangle_.w = hint_password_texture_rectangle_.w;
 	hint_password_destination_rectangle_.h = hint_password_texture_rectangle_.h;
 
@@ -140,8 +159,8 @@ void Init_Stage1()
 	hint_fake_texture_rectangle_.w = tmp_hint_fake_surface->w;
 	hint_fake_texture_rectangle_.h = tmp_hint_fake_surface->h;
 	SDL_FreeSurface(tmp_hint_fake_surface);
-	hint_fake_destination_rectangle_.x = 420;
-	hint_fake_destination_rectangle_.y = 615;
+	hint_fake_destination_rectangle_.x = 400;
+	hint_fake_destination_rectangle_.y = 600;
 	hint_fake_destination_rectangle_.w = hint_fake_texture_rectangle_.w;
 	hint_fake_destination_rectangle_.h = hint_fake_texture_rectangle_.h;
 
@@ -154,14 +173,23 @@ void Init_Stage1()
 	SDL_SetTextureAlphaMod(typing_, 100);
 	typing_destination_rectangle_[0].w = typing_destination_rectangle_[1].w = typing_source_rectangle_.w;
 	typing_destination_rectangle_[0].h = typing_destination_rectangle_[1].h = typing_source_rectangle_.h;
-	typing_destination_rectangle_[0].x = 420;
-	typing_destination_rectangle_[0].y = 440;
-	typing_destination_rectangle_[1].x = 420;
-	typing_destination_rectangle_[1].y = 500;
+	typing_destination_rectangle_[0].x = 417;
+	typing_destination_rectangle_[0].y = 393;
+	typing_destination_rectangle_[1].x = 417;
+	typing_destination_rectangle_[1].y = 459;
+
+	answer_id_destination_rectangle_.x = 417;
+	answer_id_destination_rectangle_.y = 393;
+
+	answer_password_destination_rectangle_.x = 417;
+	answer_password_destination_rectangle_.y = 459;
 
 	SDL_StartTextInput();
 
 	g_bgm_stage2 = Mix_LoadMUS("../../Resources/stage2.mp3");
+	interact_sound_ = Mix_LoadWAV("../../Resources/interact.wav");
+	correct_sound_ = Mix_LoadWAV("../../Resources/correctanswer.mp3");
+	wrong_sound_ = Mix_LoadWAV("../../Resources/wronganswer.mp3");
 }
 
 void Update_Answer()
@@ -179,8 +207,6 @@ void Update_Answer()
 			answer_id_texture_rectangle_.w = tmp_answer_id_->w;
 			answer_id_texture_rectangle_.h = tmp_answer_id_->h;
 			SDL_FreeSurface(tmp_answer_id_);
-			answer_id_destination_rectangle_.x = 420;
-			answer_id_destination_rectangle_.y = 440;
 			answer_id_destination_rectangle_.w = answer_id_texture_rectangle_.w;
 			answer_id_destination_rectangle_.h = answer_id_texture_rectangle_.h;
 		}
@@ -197,12 +223,31 @@ void Update_Answer()
 			answer_password_texture_rectangle_.w = tmp_answer_password_->w;
 			answer_password_texture_rectangle_.h = tmp_answer_password_->h;
 			SDL_FreeSurface(tmp_answer_password_);
-			answer_password_destination_rectangle_.x = 420;
-			answer_password_destination_rectangle_.y = 500;
 			answer_password_destination_rectangle_.w = answer_password_texture_rectangle_.w;
 			answer_password_destination_rectangle_.h = answer_password_texture_rectangle_.h;
 		}
 	}
+}
+
+void Reset_Stage1()
+{
+	character_state_ = 0;
+	character_state_before_ = 4;
+	left_ = 5;
+	right_ = 2;
+	cnt_[0] = 0;
+	cnt_[1] = 0;
+	alpha = 255;
+	lup_ = true;
+	rup_ = true;
+	for (int i = 0; i < 4; i++)
+		interact[i] = false;
+	typing = false;
+	character_destination_rectangle_stage1_.x = 200;
+	character_destination_rectangle_stage1_.y = 400;
+	answer_id_ = "";
+	answer_password_ = "";
+	get_intro_ = true;
 }
 
 void Update_Stage1()
@@ -212,7 +257,7 @@ void Update_Stage1()
 		character_destination_rectangle_stage1_.x -= 8;
 		if (character_destination_rectangle_stage1_.x <= 10)
 			character_destination_rectangle_stage1_.x = 10;
-		if (character_destination_rectangle_stage1_.x > 350 && character_destination_rectangle_stage1_.x < 733 && character_destination_rectangle_stage1_.y > 378 && character_destination_rectangle_stage1_.y < 525)
+		if (character_destination_rectangle_stage1_.x > 350 && character_destination_rectangle_stage1_.x < 733 && character_destination_rectangle_stage1_.y > 335 && character_destination_rectangle_stage1_.y < 495)
 			character_destination_rectangle_stage1_.x = 733;
 	}
 	else if (character_state_ == 2)
@@ -220,31 +265,31 @@ void Update_Stage1()
 		character_destination_rectangle_stage1_.x += 8;
 		if (character_destination_rectangle_stage1_.x >= 733)
 			character_destination_rectangle_stage1_.x = 733;
-		if (character_destination_rectangle_stage1_.x > 350 && character_destination_rectangle_stage1_.x < 733 && character_destination_rectangle_stage1_.y > 378 && character_destination_rectangle_stage1_.y < 525)
+		if (character_destination_rectangle_stage1_.x > 350 && character_destination_rectangle_stage1_.x < 733 && character_destination_rectangle_stage1_.y > 325 && character_destination_rectangle_stage1_.y < 495)
 			character_destination_rectangle_stage1_.x = 350;
 	}
 	else if (character_state_ == 3)
 	{
 		character_destination_rectangle_stage1_.y -= 8;
-		if (character_destination_rectangle_stage1_.y <= 118)
-			character_destination_rectangle_stage1_.y = 118;
-		if (character_destination_rectangle_stage1_.x > 350 && character_destination_rectangle_stage1_.x < 733 && character_destination_rectangle_stage1_.y > 378 && character_destination_rectangle_stage1_.y < 525)
-			character_destination_rectangle_stage1_.y = 525;
+		if (character_destination_rectangle_stage1_.y <= 10)
+			character_destination_rectangle_stage1_.y = 10;
+		if (character_destination_rectangle_stage1_.x > 350 && character_destination_rectangle_stage1_.x < 733 && character_destination_rectangle_stage1_.y > 325 && character_destination_rectangle_stage1_.y < 495)
+			character_destination_rectangle_stage1_.y = 495;
 	}
 	else if (character_state_ == 4)
 	{
 		character_destination_rectangle_stage1_.y += 8;
 		if (character_destination_rectangle_stage1_.y >= 633)
 			character_destination_rectangle_stage1_.y = 633;
-		if (character_destination_rectangle_stage1_.x > 350 && character_destination_rectangle_stage1_.x < 733 && character_destination_rectangle_stage1_.y > 378 && character_destination_rectangle_stage1_.y < 525)
-			character_destination_rectangle_stage1_.y = 378;
+		if (character_destination_rectangle_stage1_.x > 350 && character_destination_rectangle_stage1_.x < 733 && character_destination_rectangle_stage1_.y > 325 && character_destination_rectangle_stage1_.y < 495)
+			character_destination_rectangle_stage1_.y = 325;
 	}
 	if (interact[5]) {
-		if (escape_.h < 80)
+		if (escape_.h < 90)
 			escape_.h += 10;
 		else
 		{
-			escape_.h = 80;
+			escape_.h = 90;
 			if (character_destination_rectangle_stage1_.y < 633)
 				character_state_ = 4;
 			else if (character_destination_rectangle_stage1_.x < 720)
@@ -258,6 +303,7 @@ void Update_Stage1()
 					alpha = 0;
 					SDL_StopTextInput();
 					g_current_game_phase = PHASE_STAGE2;
+					Reset_Stage1();
 					Mix_PlayMusic(g_bgm_stage2, -1);
 				}
 			}
@@ -271,104 +317,108 @@ void Render_Stage1()
 	SDL_RenderClear(g_renderer); // clear the renderer to the draw color
 
 	SDL_RenderCopy(g_renderer, bg_texture_stage1_, &bg_source_rectangle_stage1_, &bg_destination_rectangle_stage1_);
+	if (get_intro_)
+		SDL_RenderCopy(g_renderer, intro_stage1_, &intro_rectangle_stage1_, &intro_destination_rectangle_stage1_);
 
-	if (interact[0])
-		SDL_RenderCopy(g_renderer, hint_id_, &hint_id_texture_rectangle_, &hint_id_destination_rectangle_);
-	if (interact[1])
-		SDL_RenderCopy(g_renderer, hint_fake_, &hint_fake_texture_rectangle_, &hint_fake_destination_rectangle_);
-	if (interact[2])
-		SDL_RenderCopy(g_renderer, hint_password_, &hint_password_texture_rectangle_, &hint_password_destination_rectangle_);
+	if (!get_intro_) {
 
-	if (interact[5])
-	{
-		SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 0);
-		SDL_RenderFillRect(g_renderer, &escape_);
-		SDL_SetTextureAlphaMod(character_stage1_, alpha);
-	}
+		if (interact[0])
+			SDL_RenderCopy(g_renderer, hint_id_, &hint_id_texture_rectangle_, &hint_id_destination_rectangle_);
+		if (interact[1])
+			SDL_RenderCopy(g_renderer, hint_fake_, &hint_fake_texture_rectangle_, &hint_fake_destination_rectangle_);
+		if (interact[2])
+			SDL_RenderCopy(g_renderer, hint_password_, &hint_password_texture_rectangle_, &hint_password_destination_rectangle_);
 
-	if (character_state_ == 0) {
-		cnt_[0] = cnt_[1] = 0;
-		if (character_state_before_ == 1) {
-			SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[6], &character_destination_rectangle_stage1_);
+		if (interact[5])
+		{
+			SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 0);
+			SDL_RenderFillRect(g_renderer, &escape_);
+			SDL_SetTextureAlphaMod(character_stage1_, alpha);
 		}
-		else if (character_state_before_ == 2) {
-			SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[3], &character_destination_rectangle_stage1_);
+		if (character_state_ == 0) {
+			cnt_[0] = cnt_[1] = 0;
+			if (character_state_before_ == 1) {
+				SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[6], &character_destination_rectangle_stage1_);
+			}
+			else if (character_state_before_ == 2) {
+				SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[3], &character_destination_rectangle_stage1_);
+			}
+			else if (character_state_before_ == 3) {
+				SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[1], &character_destination_rectangle_stage1_);
+			}
+			else if (character_state_before_ == 4) {
+				SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[0], &character_destination_rectangle_stage1_);
+			}
 		}
-		else if (character_state_before_ == 3) {
+		else if (character_state_ == 1) {
+			SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[left_], &character_destination_rectangle_stage1_);
+			if (cnt_[0] == 5) {
+				if (left_ == 5) {
+					left_ = 6;
+					cnt_[0] = 0;
+				}
+				else if (left_ == 7) {
+					left_ = 6;
+					cnt_[0] = 0;
+				}
+				else {
+					if (lup_) {
+						left_ = 7;
+						cnt_[0] = 0;
+						lup_ = false;
+					}
+					else {
+						left_ = 5;
+						cnt_[0] = 0;
+						lup_ = true;
+					}
+				}
+			}
+			cnt_[0]++;
+		}
+		else if (character_state_ == 2) {
+			SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[right_], &character_destination_rectangle_stage1_);
+			if (cnt_[1] == 5) {
+				if (right_ == 2) {
+					right_ = 3;
+					cnt_[1] = 0;
+				}
+				else if (right_ == 4) {
+					right_ = 3;
+					cnt_[1] = 0;
+				}
+				else
+				{
+					if (rup_) {
+						right_ = 4;
+						cnt_[1] = 0;
+						rup_ = false;
+					}
+					else {
+						right_ = 2;
+						cnt_[1] = 0;
+						rup_ = true;
+					}
+				}
+			}
+			cnt_[1]++;
+		}
+		else if (character_state_ == 3 || character_state_ == 5) {
 			SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[1], &character_destination_rectangle_stage1_);
 		}
-		else if (character_state_before_ == 4) {
+		else if (character_state_ == 4 || character_state_ == 0) {
 			SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[0], &character_destination_rectangle_stage1_);
 		}
-	}
-	else if (character_state_ == 1) {
-		SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[left_], &character_destination_rectangle_stage1_);
-		if (cnt_[0] == 5) {
-			if (left_ == 5) {
-				left_ = 6;
-				cnt_[0] = 0;
-			}
-			else if (left_ == 7) {
-				left_ = 6;
-				cnt_[0] = 0;
-			}
-			else {
-				if (lup_) {
-					left_ = 7;
-					cnt_[0] = 0;
-					lup_ = false;
-				}
-				else {
-					left_ = 5;
-					cnt_[0] = 0;
-					lup_ = true;
-				}
-			}
-		}
-		cnt_[0]++;
-	}
-	else if (character_state_ == 2) {
-		SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[right_], &character_destination_rectangle_stage1_);
-		if (cnt_[1] == 5) {
-			if (right_ == 2) {
-				right_ = 3;
-				cnt_[1] = 0;
-			}
-			else if (right_ == 4) {
-				right_ = 3;
-				cnt_[1] = 0;
-			}
-			else
-			{
-				if (rup_) {
-					right_ = 4;
-					cnt_[1] = 0;
-					rup_ = false;
-				}
-				else {
-					right_ = 2;
-					cnt_[1] = 0;
-					rup_ = true;
-				}
-			}
-		}
-		cnt_[1]++;
-	}
-	else if (character_state_ == 3 || character_state_ == 5) {
-		SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[1], &character_destination_rectangle_stage1_);
-	}
-	else if (character_state_ == 4) {
-		SDL_RenderCopy(g_renderer, character_stage1_, &character_source_rectangle_stage1_[0], &character_destination_rectangle_stage1_);
-	}
-	if (interact[3] && answer_id_.length() == 0)
-		SDL_RenderCopy(g_renderer, typing_, &typing_source_rectangle_, &typing_destination_rectangle_[0]);
-	if (interact[4] && answer_password_.length() == 0)
-		SDL_RenderCopy(g_renderer, typing_, &typing_source_rectangle_, &typing_destination_rectangle_[1]);
+		if (interact[3] && answer_id_.length() == 0)
+			SDL_RenderCopy(g_renderer, typing_, &typing_source_rectangle_, &typing_destination_rectangle_[0]);
+		if (interact[4] && answer_password_.length() == 0)
+			SDL_RenderCopy(g_renderer, typing_, &typing_source_rectangle_, &typing_destination_rectangle_[1]);
 
-	if (answer_id_.length() > 0)
-		SDL_RenderCopy(g_renderer, answer_id_texture_, &answer_id_texture_rectangle_, &answer_id_destination_rectangle_);
-	if (answer_password_.length() > 0)
-		SDL_RenderCopy(g_renderer, answer_password_texture_, &answer_password_texture_rectangle_, &answer_password_destination_rectangle_);
+		if (answer_id_.length() > 0)
+			SDL_RenderCopy(g_renderer, answer_id_texture_, &answer_id_texture_rectangle_, &answer_id_destination_rectangle_);
+		if (answer_password_.length() > 0)
+			SDL_RenderCopy(g_renderer, answer_password_texture_, &answer_password_texture_rectangle_, &answer_password_destination_rectangle_);
+	}
 
 	SDL_RenderPresent(g_renderer); // draw to the screen
 }
@@ -380,7 +430,7 @@ void HandleEvents_Stage1()
 	SDL_Event event;
 	if (SDL_PollEvent(&event))
 	{
-		if (!interact[5]) {
+		if (!interact[5] && !get_intro_) {
 			switch (event.type)
 			{
 			case SDL_QUIT:
@@ -446,34 +496,48 @@ void HandleEvents_Stage1()
 					}
 					else if (event.key.keysym.sym == SDLK_x)
 					{
-						if (character_destination_rectangle_stage1_.x >= 40 && character_destination_rectangle_stage1_.x <= 700 && character_destination_rectangle_stage1_.y >= 120 && character_destination_rectangle_stage1_.y <= 170) {
+						if (character_destination_rectangle_stage1_.x >= 40 && character_destination_rectangle_stage1_.x <= 650 && character_destination_rectangle_stage1_.y >= 20 && character_destination_rectangle_stage1_.y <= 65) {
+							Mix_PlayChannel(-1, interact_sound_, 0);
 							if (!interact[2])
 								interact[2] = true;
 							else
 								interact[2] = false;
 						}
-						if (character_destination_rectangle_stage1_.x >= 160 && character_destination_rectangle_stage1_.x <= 340 && character_destination_rectangle_stage1_.y >= 620) {
+						if (character_destination_rectangle_stage1_.x >= 160 && character_destination_rectangle_stage1_.x <= 340 && character_destination_rectangle_stage1_.y >= 600) {
+							Mix_PlayChannel(-1, interact_sound_, 0);
 							if (!interact[0])
 								interact[0] = true;
 							else
 								interact[0] = false;
 						}
-						if (character_destination_rectangle_stage1_.x >= 400 && character_destination_rectangle_stage1_.x <= 600 && character_destination_rectangle_stage1_.y >= 620) {
+						if (character_destination_rectangle_stage1_.x >= 400 && character_destination_rectangle_stage1_.x <= 600 && character_destination_rectangle_stage1_.y >= 600) {
+							Mix_PlayChannel(-1, interact_sound_, 0);
 							if (!interact[1])
 								interact[1] = true;
 							else
 								interact[1] = false;
 						}
-						if (character_destination_rectangle_stage1_.x >= 345 && character_destination_rectangle_stage1_.x <= 350 && character_destination_rectangle_stage1_.y >= 390 && character_destination_rectangle_stage1_.y <= 520)
+						if (character_destination_rectangle_stage1_.x >= 330 && character_destination_rectangle_stage1_.x <= 350 && character_destination_rectangle_stage1_.y >= 360 && character_destination_rectangle_stage1_.y <= 465)
 							typing = true;
-						if (character_destination_rectangle_stage1_.x >= 560 && character_destination_rectangle_stage1_.x <= 660 && character_destination_rectangle_stage1_.y <= 550 && character_destination_rectangle_stage1_.y >= 525) {
+						if (character_destination_rectangle_stage1_.x >= 560 && character_destination_rectangle_stage1_.x <= 660 && character_destination_rectangle_stage1_.y <= 515 && character_destination_rectangle_stage1_.y >= 495) {
 							char tmp_id[16] = "";
 							char tmp_password[16] = "";
 							strcpy(tmp_id, answer_id_.c_str());
 							strcpy(tmp_password, answer_password_.c_str());
-							if (strcmp(tmp_id, "error") == 0 && strcmp(tmp_password, "bug") == 0)
+							if (strcmp(tmp_id, "error") == 0 && strcmp(tmp_password, "bug") == 0) {
+								Mix_PlayChannel(-1, correct_sound_, 0);
 								interact[5] = true;
+							}
+							else
+								Mix_PlayChannel(-1, wrong_sound_, 0);
 						}
+					}
+					else if (event.key.keysym.sym == SDLK_n)
+					{
+						SDL_StopTextInput();
+						g_current_game_phase = PHASE_STAGE2;
+						Reset_Stage1();
+						Mix_PlayMusic(g_bgm_stage2, -1);
 					}
 				}
 				break;
@@ -511,10 +575,11 @@ void HandleEvents_Stage1()
 				}
 				else if (event.key.keysym.sym == SDLK_x)
 				{
-					if (typing) {
-						if (character_destination_rectangle_stage1_.y <= 435)
+					if (typing&&!interact[3]&&!interact[4]&& character_destination_rectangle_stage1_.y >= 360 && character_destination_rectangle_stage1_.y <= 515) {
+						Mix_PlayChannel(-1, interact_sound_, 0);
+						if (character_destination_rectangle_stage1_.y <= 390)
 							interact[3] = true;
-						if (character_destination_rectangle_stage1_.y >= 465)
+						else if (character_destination_rectangle_stage1_.y >= 430)
 							interact[4] = true;
 					}
 
@@ -522,6 +587,30 @@ void HandleEvents_Stage1()
 				break;
 			default:
 				break;
+			}
+		}
+		else if (interact[5] && !get_intro_) {
+			switch (event.type)
+			{
+			case SDL_QUIT:
+				g_flag_running = false;
+				break;
+			default:
+				break;
+			}
+		}
+		else if (get_intro_) {
+			switch (event.type) 
+			{
+				case  SDL_QUIT:
+					g_flag_running = false;
+					break;
+				case SDL_MOUSEBUTTONDOWN:
+					Mix_PlayChannel(-1, interact_sound_, 0);
+					get_intro_ = false;
+					break;
+			default:
+					break;
 			}
 		}
 	}
@@ -536,9 +625,15 @@ void Clear_Stage1()
 	SDL_DestroyTexture(hint_id_);
 	SDL_DestroyTexture(hint_password_);
 	SDL_DestroyTexture(hint_fake_);
+	if(answer_id_texture_)
 	SDL_DestroyTexture(answer_id_texture_);
+	if(answer_password_texture_)
 	SDL_DestroyTexture(answer_password_texture_);
 	SDL_DestroyTexture(typing_);
+	SDL_DestroyTexture(intro_stage1_);
 	Mix_FreeMusic(g_bgm_stage2);
+	Mix_FreeChunk(interact_sound_);
+	Mix_FreeChunk(correct_sound_);
+	Mix_FreeChunk(wrong_sound_);
 }
 
