@@ -18,6 +18,11 @@ SDL_Rect g_title_source_rect;
 SDL_Rect g_title_destination_rect;
 SDL_Texture* g_title_texture;
 
+// next
+SDL_Rect g_next_source_rect;
+SDL_Rect g_next_destination_rect;
+SDL_Texture* g_next_texture;
+
 // Music
 Mix_Music* g_intro_bg_music;
 Mix_Music* g_bgm_stage1_;
@@ -87,6 +92,22 @@ void Init_Intro()
 	g_title_destination_rect.w = 800;
 	g_title_destination_rect.h = 700;
 
+
+	// next
+	SDL_Surface* next_surface = IMG_Load("../../Resources/intro_next.png");
+	g_next_texture = SDL_CreateTextureFromSurface(g_renderer, next_surface);
+	SDL_FreeSurface(next_surface);
+
+	g_next_source_rect.x = 0;
+	g_next_source_rect.y = 0;
+	g_next_source_rect.w = 968;
+	g_next_source_rect.h = 174;
+
+	g_next_destination_rect.x = 600;
+	g_next_destination_rect.y = 5;
+	g_next_destination_rect.w = 250;
+	g_next_destination_rect.h = 40;
+
 	g_bgm_stage1_ = Mix_LoadMUS("../../Resources/stage1.mp3");
 }
 
@@ -109,6 +130,7 @@ void Render_Intro()
 	else if (intro_state == 3) {
 		SDL_RenderCopy(g_renderer, g_intro2_texture, &g_intro2_source_rect, &g_intro2_destination_rect);
 	}
+	SDL_RenderCopy(g_renderer, g_next_texture, &g_next_source_rect, &g_next_destination_rect);
 
 
 	SDL_RenderPresent(g_renderer);

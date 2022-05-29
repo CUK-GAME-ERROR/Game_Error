@@ -13,6 +13,11 @@ SDL_Rect g_fail_source_rect;
 SDL_Rect g_fail_destination_rect;
 SDL_Texture* g_fail_texture;
 
+// restart
+SDL_Rect g_restart_source_rect;
+SDL_Rect g_restart_destination_rect;
+SDL_Texture* g_restart_texture;
+
 // Music
 static Mix_Music* g_bgm_stage1;
 
@@ -50,6 +55,22 @@ void Init_Ending()
 	g_fail_destination_rect.w = 800;
 	g_fail_destination_rect.h = 700;
 
+
+	// restart
+	SDL_Surface* restart_surface = IMG_Load("../../Resources/ending_restart.png");
+	g_restart_texture = SDL_CreateTextureFromSurface(g_renderer, restart_surface);
+	SDL_FreeSurface(restart_surface);
+
+	g_restart_source_rect.x = 0;
+	g_restart_source_rect.y = 0;
+	g_restart_source_rect.w = 842;
+	g_restart_source_rect.h = 174;
+
+	g_restart_destination_rect.x = 600;
+	g_restart_destination_rect.y = 5;
+	g_restart_destination_rect.w = 200;
+	g_restart_destination_rect.h = 40;
+
 	g_bgm_stage1 = Mix_LoadMUS("../../Resources/stage1.mp3");
 }
 
@@ -66,6 +87,8 @@ void Render_Ending()
 		SDL_RenderCopy(g_renderer, g_success_texture, &g_success_source_rect, &g_success_destination_rect);
 	else if (g_game_ending == 0)// ½ÇÆÐ
 		SDL_RenderCopy(g_renderer, g_fail_texture, &g_fail_source_rect, &g_fail_destination_rect);
+
+	SDL_RenderCopy(g_renderer, g_restart_texture, &g_restart_source_rect, &g_restart_destination_rect);
 
 	SDL_RenderPresent(g_renderer);
 }
