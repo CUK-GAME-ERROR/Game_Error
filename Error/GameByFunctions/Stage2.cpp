@@ -106,6 +106,7 @@ static Mix_Chunk* g_hit_sound;
 static Mix_Chunk* g_attack_sound;
 static Mix_Chunk* g_drink_sound;
 static Mix_Chunk* g_failure_sound;
+static Mix_Chunk* interact_sound_;
 
 static Mix_Music* g_bgm_stage3;
 
@@ -352,6 +353,7 @@ void Init_Stage2()
 	Mix_VolumeChunk(g_drink_sound, 50);
 	g_failure_sound = Mix_LoadWAV("../../Resources/failure.mp3");
 	Mix_VolumeChunk(g_failure_sound, 50);
+	interact_sound_ = Mix_LoadWAV("../../Resources/interact.wav");
 }
 
 void Update_pointerNum()
@@ -936,8 +938,10 @@ void HandleEvents_Stage2()
 			// If the mouse left button is pressed. 
 			if (event.button.button == SDL_BUTTON_LEFT)
 			{
-				if (!read_intro)
+				if (!read_intro) {
+					Mix_PlayChannel(-1, interact_sound_, 0);
 					read_intro = true;
+				}
 			}
 			break;
 
@@ -969,6 +973,7 @@ void Clear_Stage2()
 	Mix_FreeChunk(g_attack_sound);
 	Mix_FreeChunk(g_drink_sound);
 	Mix_FreeChunk(g_failure_sound);
+	Mix_FreeChunk(interact_sound_);
 	Mix_FreeMusic(g_bgm_stage3);
 }
 
