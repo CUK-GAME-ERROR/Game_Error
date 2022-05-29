@@ -127,5 +127,6 @@ void Clear_Ending()
 {
 	SDL_DestroyTexture(g_success_texture);
 	SDL_DestroyTexture(g_fail_texture);
+	SDL_DestroyTexture(g_restart_texture);
 	Mix_FreeMusic(g_bgm_stage1);
 }

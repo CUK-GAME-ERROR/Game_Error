@@ -179,6 +179,6 @@ void Clear_Intro()
 	SDL_DestroyTexture(g_intro1_texture);
 	SDL_DestroyTexture(g_intro2_texture);
 	SDL_DestroyTexture(g_title_texture);
-	
+	SDL_DestroyTexture(g_next_texture);
 	
 }
