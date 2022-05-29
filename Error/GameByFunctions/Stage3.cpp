@@ -180,6 +180,7 @@ void Reset_Stage3() {
 	isShot = false;
 	onladder = false;
 	isWarn = false;
+	isTime = false;
 
 	g_player_unbeatable = false;
 	g_player_heart = 4;
@@ -506,10 +507,6 @@ void HandleEvents_Stage3()
 				}
 				else if (event.key.keysym.sym == SDLK_RIGHT)
 				{
-					std::cout << "KeyDown" << std::endl;
-					for (int i = 0; i < 4; i++) {
-						std::cout << i << ": " << ran_m[i] << std::endl;
-					}
 					playerRanKeyDown(ran_m[1]);
 				}
 				else if (event.key.keysym.sym == SDLK_UP)
@@ -793,7 +790,7 @@ void Update_Stage3()
 			(right < g_destination_rectangle_player.x) ||
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
-			//g_player_heart -= 2;
+			g_player_heart -= 2;
 			Mix_PlayChannel(-1, g_attack_sound, 0);
 			g_player_unbeatable = true;
 			break;
@@ -813,7 +810,7 @@ void Update_Stage3()
 			(right < g_destination_rectangle_player.x) ||
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
-			//g_player_heart -= 2;
+			g_player_heart -= 2;
 			Mix_PlayChannel(-1, g_attack_sound, 0);
 			g_player_unbeatable = true;
 			break;
@@ -880,7 +877,7 @@ void Update_Stage3()
 				(g_destination_rectangle_player.y + g_destination_rectangle_player.h == ground[i].y))
 			{
 				Mix_PlayChannel(-1, g_attack_sound, 0);
-				//g_player_heart -= 1;
+				g_player_heart -= 1;
 				g_player_unbeatable = true;
 				isFall = false;
 				break;
@@ -1017,8 +1014,7 @@ void Render_Stage3()
 	if(isWarn)
 		SDL_RenderCopy(g_renderer, warnChange, &warn_source, &warning_ran);
 
-	//pointer
-	//SDL_RenderCopy(g_renderer, g_texture_pointer50, &g_source_rectangle_pointer50, &g_destination_rectangle_pointer50);
+	
 
 	if (isShot) {
 		if (pointer_head == 0)
