@@ -785,16 +785,15 @@ void Render_Stage2()
 		}
 	}
 
-	if (read_intro) {
-		// timer
-		static Uint32 last_ticks = SDL_GetTicks();
-		Uint32 current_ticks = SDL_GetTicks();
+	// timer
+	static Uint32 last_ticks = SDL_GetTicks();
+	Uint32 current_ticks = SDL_GetTicks();
 
+	if(read_intro)
 		time_ms_ += current_ticks - last_ticks;
-		last_ticks = current_ticks;
+	last_ticks = current_ticks;
 
-		g_destination_rectangle_timeG.w = (g_time - time_ms_) * 0.0125;
-	}
+	g_destination_rectangle_timeG.w = (g_time - time_ms_) * 0.0125;
 
 	SDL_RenderCopy(g_renderer, g_texture_timeW, &g_source_rectangle_timeW, &g_destination_rectangle_timeW);
 	SDL_RenderCopy(g_renderer, g_texture_timeG, &g_source_rectangle_timeG, &g_destination_rectangle_timeG);
