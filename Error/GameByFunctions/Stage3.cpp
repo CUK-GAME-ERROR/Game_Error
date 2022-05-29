@@ -26,13 +26,6 @@ static int g_running_flag; // 1~10, 11~20
 static bool g_player_unbeatable;
 static int g_unbeatable_flag;
 
-/*
-* static bool g_player_go_left;
-static bool g_player_go_right;
-static bool g_player_go_up;
-static bool g_player_go_down;
-
-*/
 bool g_player_state[4] = { false, false, false, false };
 
 
@@ -53,7 +46,6 @@ std::list<Pos> a_position;
 bool isDown;
 bool isTime;
 bool isMove;
-bool isEffect;
 
 SDL_Rect b_face_source_rect;
 SDL_Rect b_face_destination_rect;
@@ -182,6 +174,7 @@ void Reset_Stage3() {
 	for (int k = 0; k < 4; k++)
 		ran_m[k] = k;
 
+	isDown = false;
 	isJump = false;
 	isFall = false;
 	isShot = false;
@@ -618,10 +611,6 @@ void ranMove() {
 void Update_Stage3()
 {
 	if (isDown) {
-		if (!isEffect && read_intro) {
-			isEffect = true;
-			//Mix_PlayChannel(-1, b_attack_sound, 0);
-		}
 		b_attackDown_destination.y += 10;
 	}
 	else if (!isDown) {
@@ -1141,9 +1130,6 @@ void Render_Stage3()
 		if (g_elapsed_time_ms - g_last_time_ms > attackCool_Down) {
 			isDown = false;
 		}
-		else if (g_elapsed_time_ms - g_last_time_ms > attackCool_Down - 1000) {
-			isEffect = false;
-		}
 	}
 
 	// intro
@@ -1162,6 +1148,7 @@ void Clear_Stage3()
 	SDL_DestroyTexture(g_texture_monster);
 	SDL_DestroyTexture(g_texture_pointer);
 	SDL_DestroyTexture(g_texture_pointer50);
+	SDL_DestroyTexture(boxx_attack_texture);
 	SDL_DestroyTexture(g_texture_heart);
 	SDL_DestroyTexture(g_texture_link);
 	SDL_DestroyTexture(bHp_texture);
