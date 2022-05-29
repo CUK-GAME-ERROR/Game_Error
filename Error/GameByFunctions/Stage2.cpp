@@ -3,6 +3,11 @@
 #include <iostream>
 #include "player.h"
 
+static SDL_Texture* g_texture_stage2Intro;
+static SDL_Rect g_source_rectangle_stage2Intro;
+static SDL_Rect g_destination_rectangle_stage2Intro;
+static bool read_intro;
+
 static std::vector<Pos> map;
 static std::vector<Pos> ground;
 static std::vector<Pos> hole;
@@ -125,6 +130,8 @@ void Reset_Stage2()
 
 	time_ms_ = 0;
 
+	read_intro = false;
+
 	for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++)
 		iter->isAlive = true;
 	for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++)
@@ -136,6 +143,18 @@ void Reset_Stage2()
 
 void Init_Stage2()
 {
+	// intro
+	SDL_Surface* stage2Intro_surface = IMG_Load("../../Resources/stage2_intro.png");
+	g_texture_stage2Intro = SDL_CreateTextureFromSurface(g_renderer, stage2Intro_surface);
+	SDL_FreeSurface(stage2Intro_surface);
+
+	SDL_QueryTexture(g_texture_stage2Intro, NULL, NULL, &g_source_rectangle_stage2Intro.w, &g_source_rectangle_stage2Intro.h);
+	g_source_rectangle_stage2Intro.x = 0;
+	g_source_rectangle_stage2Intro.y = 0;
+	g_destination_rectangle_stage2Intro = { 100, 100, 600, 500 };
+	
+	read_intro = false;
+
 	// map
 	map = Init_Map();
 	ground = Init_Ground();
@@ -761,14 +780,16 @@ void Render_Stage2()
 		}
 	}
 
-	// timer
-	static Uint32 last_ticks = SDL_GetTicks();
-	Uint32 current_ticks = SDL_GetTicks();
+	if (read_intro) {
+		// timer
+		static Uint32 last_ticks = SDL_GetTicks();
+		Uint32 current_ticks = SDL_GetTicks();
 
-	time_ms_ += current_ticks - last_ticks;
-	last_ticks = current_ticks;
+		time_ms_ += current_ticks - last_ticks;
+		last_ticks = current_ticks;
 
-	g_destination_rectangle_timeG.w = (g_time - time_ms_) * 0.0125;
+		g_destination_rectangle_timeG.w = (g_time - time_ms_) * 0.0125;
+	}
 
 	SDL_RenderCopy(g_renderer, g_texture_timeW, &g_source_rectangle_timeW, &g_destination_rectangle_timeW);
 	SDL_RenderCopy(g_renderer, g_texture_timeG, &g_source_rectangle_timeG, &g_destination_rectangle_timeG);
@@ -814,6 +835,10 @@ void Render_Stage2()
 			SDL_RenderCopy(g_renderer, g_texture_monster, &g_source_rectangle_monster[3], &g_destination_rectangle_monster);
 	}
 
+	// intro
+	if(!read_intro)
+		SDL_RenderCopy(g_renderer, g_texture_stage2Intro, &g_source_rectangle_stage2Intro, &g_destination_rectangle_stage2Intro);
+
 	SDL_RenderPresent(g_renderer);
 }
 
@@ -831,7 +856,7 @@ void HandleEvents_Stage2()
 			break;
 
 		case SDL_KEYDOWN:
-			if (!isFall) {
+			if (!isFall && read_intro) {
 				if (event.key.keysym.sym == SDLK_LEFT)
 				{
 					g_player_go_left = true;
@@ -908,7 +933,8 @@ void HandleEvents_Stage2()
 			// If the mouse left button is pressed. 
 			if (event.button.button == SDL_BUTTON_LEFT)
 			{
-
+				if (!read_intro)
+					read_intro = true;
 			}
 			break;
 
@@ -922,6 +948,7 @@ void HandleEvents_Stage2()
 
 void Clear_Stage2()
 {
+	SDL_DestroyTexture(g_texture_stage2Intro);
 	SDL_DestroyTexture(g_texture_player);
 	SDL_DestroyTexture(g_texture_ladder);
 	SDL_DestroyTexture(g_texture_timeW);
