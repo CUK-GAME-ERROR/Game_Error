@@ -22,10 +22,14 @@ static int g_player_heart; // 1 heart = 2 g_player_heart
 static bool g_player_unbeatable;
 static int g_unbeatable_flag;
 
-static bool g_player_go_left;
+/*
+* static bool g_player_go_left;
 static bool g_player_go_right;
 static bool g_player_go_up;
 static bool g_player_go_down;
+
+*/
+bool g_player_state[4] = { false, false, false, false };
 
 
 //boss
@@ -46,12 +50,21 @@ bool isDown;
 bool isTime;
 bool isMove;
 
+SDL_Rect b_face_source_rect;
+SDL_Rect b_face_destination_rect;
+
 //player 조작법
-int ran_m[3] = { 0, 1, 2 };
+int ran_m[4] = { 0, 1, 2, 3 };
+//std::vector<int> randomNum;
+int randomNum;
+int randomIndex;
 bool isChange; //발동 제한
 bool isRan; //랜덤 한번만 실행
 float changeCool; //바뀐 방향키 유지 쿨타임
 float randCool; //발동 쿨타임
+int currentKey;
+
+
 
 //timer
 int g_elapsed_time_ms;
@@ -79,6 +92,9 @@ static int g_monster_size;
 
 //map
 static std::vector<Pos> map_stage3;
+static std::vector<Pos> ground;
+static std::vector<Pos> hole;
+static bool isFall;
 
 //ladder
 static SDL_Texture* g_texture_ladder;
@@ -111,25 +127,52 @@ static SDL_Texture* g_texture_heart;
 static SDL_Rect g_source_rectangle_heart[3];
 static SDL_Rect g_destination_rectangle_heart;
 
+//boss Hp
+static SDL_Texture* bHp_texture;
+static SDL_Rect bHp_source_rect;
+static SDL_Rect bHp_destination_rect;
+
+static SDL_Texture* g_texture_timeW;
+static SDL_Rect g_source_rectangle_timeW;
+static SDL_Rect g_destination_rectangle_timeW;
+
+//boss Attack
+SDL_Texture* boxx_attack_texture;
+SDL_Rect boss_attack_source;
+SDL_Rect boss_attack_destination;
+
 
 void Init_Stage3()
 {
 	//map
 	map_stage3 = Init_Map();
+	ground = Init_Ground();
+	hole = Init_Hole();
 
 	attackCool_Down = 5000;
-	randCool = 10000;
-	changeCool = 2000;
+	randCool = 25000;
+	changeCool = 10000;
+
+	//boss_attack
+	SDL_Surface* boss_attack_surface = IMG_Load("../../Resources/lightning.png");
+	boxx_attack_texture = SDL_CreateTextureFromSurface(g_renderer, boss_attack_surface);
+	SDL_FreeSurface(boss_attack_surface);
+
+	boss_attack_source.x = 72;
+	boss_attack_source.y = 2;
+	boss_attack_source.w = 102;
+	boss_attack_source.h = 192;
 
 	b_attackDown_destination.x = 51;
 	b_attackDown_destination.y = 184;
 	b_attackDown_destination.w = 50;
 	b_attackDown_destination.h = 50;
 
-	b_attackDown_rect.x = 51;
+	/*b_attackDown_rect.x = 51;
 	b_attackDown_rect.y = 184;
 	b_attackDown_rect.w = 50;
 	b_attackDown_rect.h = 50;
+	*/
 
 	for (int i = 0; i < 4; i++) {
 		a_position.push_back(Pos(b_attackDown_destination.x, b_attackDown_destination.y));
@@ -151,11 +194,6 @@ void Init_Stage3()
 	g_destination_rectangle_player.w = 25;
 	g_destination_rectangle_player.h = g_player_height;
 
-	g_player_go_left = false;
-	g_player_go_right = false;
-	g_player_go_up = false;
-	g_player_go_down = false;
-
 	isJump = false;
 	power = 40;
 	jumpSpeed = 5;
@@ -176,19 +214,25 @@ void Init_Stage3()
 	b_source_rect.h = 427;
 
 	b_destination_rect.x = 50;
-	b_destination_rect.y = 195;
+	b_destination_rect.y = 500;
 	b_destination_rect.w = 50;
-	b_destination_rect.h = 60;
+	b_destination_rect.h = 55;
+
+	b_face_source_rect.x = 74;
+	b_face_source_rect.y = 51;
+	b_face_source_rect.w = 357;
+	b_face_source_rect.h = 270;
+
+	b_face_destination_rect.x = 20;
+	b_face_destination_rect.y = 10;
+	b_face_destination_rect.w = 50;
+	b_face_destination_rect.h = 50;
 
 	//bossRandomMove
 	ranPos.push_back(Pos(IndextoX(252), IndextoY(252)));
 	ranPos.push_back(Pos(IndextoX(610), IndextoY(610)));
-
-	for (int j = 0; j < 2; j++) {
-		std::cout << j << std::endl;
-		std::cout << "x: " << ranPos[j].x << std::endl;
-		std::cout << "y: " << ranPos[j].y << std::endl;
-	}
+	ranPos.push_back(Pos(IndextoX(98), IndextoY(98)));
+	ranPos.push_back(Pos(IndextoX(375), IndextoY(375)));
 
 	//sub_Monster
 	SDL_Surface* monster_surface = IMG_Load("../../Resources/monster_spritesheet.png");
@@ -201,16 +245,13 @@ void Init_Stage3()
 
 	monsterA_Pos.push_back(Pos(IndextoX(549), IndextoY(549) - g_monster_size));
 	monsterA_Pos.push_back(Pos(IndextoX(426), IndextoY(426) - g_monster_size));
-	//monsterA_Pos.push_back(Pos(IndextoX(166), IndextoY(166) - g_monster_size));
 	monsterA_Pos.push_back(Pos(IndextoX(183), IndextoY(183) - g_monster_size));
 	for (int i = 0; i < monsterANum; i++)
 		monsterA.push_back(Monster(monsterA_Pos[i], movementA[i], directionA[i], true));
 
 	monsterB_Pos.push_back(Pos(IndextoX(440), IndextoY(440) - g_monster_size));
 	monsterB_Pos.push_back(Pos(IndextoX(571), IndextoY(571) - g_monster_size));
-	//monsterB_Pos.push_back(Pos(IndextoX(291), IndextoY(291) - g_monster_size));
 	monsterB_Pos.push_back(Pos(IndextoX(302), IndextoY(302) - g_monster_size));
-	//monsterB_Pos.push_back(Pos(IndextoX(181), IndextoY(181) - g_monster_size));
 	for (int i = 0; i < monsterBNum; i++)
 		monsterB.push_back(Monster(monsterB_Pos[i], movementB[i], directionB[i], true));
 
@@ -272,25 +313,50 @@ void Init_Stage3()
 
 	pointer_num = 10;
 	isShot = false;
+
+	//boss Hp
+	SDL_Surface* bossHp_surface = IMG_Load("../../Resources/time_red.png");
+	bHp_texture = SDL_CreateTextureFromSurface(g_renderer, bossHp_surface);
+	SDL_FreeSurface(bossHp_surface);
+	SDL_QueryTexture(bHp_texture, NULL, NULL, &bHp_source_rect.w, &bHp_source_rect.h);
+
+	bHp_source_rect.x = 0;
+	bHp_source_rect.y = 0;
+	bHp_destination_rect.x = 25;
+	bHp_destination_rect.y = 25;
+	bHp_destination_rect.w = 750;
+	bHp_destination_rect.h = 25;
+
+	SDL_Surface* timeW_surface = IMG_Load("../../Resources/time_white.png");
+	g_texture_timeW = SDL_CreateTextureFromSurface(g_renderer, timeW_surface);
+	SDL_FreeSurface(timeW_surface);
+
+	SDL_QueryTexture(g_texture_timeW, NULL, NULL, &g_source_rectangle_timeW.w, &g_source_rectangle_timeW.h);
+	g_source_rectangle_timeW.x = 0;
+	g_source_rectangle_timeW.y = 0;
+	g_destination_rectangle_timeW.x = 25;
+	g_destination_rectangle_timeW.y = 25;
+	g_destination_rectangle_timeW.w = 750;
+	g_destination_rectangle_timeW.h = 25;
 }
 
 void playerRanKeyDown(int move_state) {
 	switch (move_state) {
 	case 0:
-		g_player_go_left = true;
+		g_player_state[0] = true;
 		g_player_head = 1;
 		break;
 	case 1:
-		g_player_go_right = true;
+		g_player_state[1] = true;
 		g_player_head = 0;
 		break;
 	case 2:
 		if (!isJump)
-			g_player_go_up = true;
+			g_player_state[2] = true;
 		break;
 	case 3:
 		if (!isJump)
-			g_player_go_down = true;
+			g_player_state[3] = true;
 		break;
 	}
 }
@@ -298,18 +364,18 @@ void playerRanKeyDown(int move_state) {
 void playerRanKeyUp(int move_state) {
 	switch (move_state) {
 	case 0:
-		g_player_go_left = false;
+		g_player_state[0] = false;
 		g_running_flag = 1;
 		break;
 	case 1:
-		g_player_go_right = false;
+		g_player_state[1] = false;
 		g_running_flag = 1;
 		break;
 	case 2:
-		g_player_go_up = false;
+		g_player_state[2] = false;
 		break;
 	case 3:
-		g_player_go_down = false;
+		g_player_state[3] = false;
 		break;
 	}
 }
@@ -328,23 +394,23 @@ void HandleEvents_Stage3()
 		case SDL_KEYDOWN:
 			if (event.key.keysym.sym == SDLK_LEFT)
 			{
-				g_player_go_left = true;
-				g_player_head = 1;
+				playerRanKeyDown(ran_m[0]);
 			}
 			else if (event.key.keysym.sym == SDLK_RIGHT)
 			{
-				g_player_go_right = true;
-				g_player_head = 0;
+				std::cout << "KeyDown" << std::endl;
+				for (int i = 0; i < 4; i++) {
+					std::cout << i << ": " << ran_m[i] << std::endl;
+				}
+				playerRanKeyDown(ran_m[1]);
 			}
 			else if (event.key.keysym.sym == SDLK_UP)
 			{
-				if (!isJump)
-					g_player_go_up = true;
+				playerRanKeyDown(ran_m[2]);
 			}
 			else if (event.key.keysym.sym == SDLK_DOWN)
 			{
-				if (!isJump)
-					g_player_go_down = true;
+				playerRanKeyDown(ran_m[3]);
 			}
 
 			if (event.key.keysym.sym == SDLK_SPACE)
@@ -370,21 +436,23 @@ void HandleEvents_Stage3()
 		case SDL_KEYUP:
 			if (event.key.keysym.sym == SDLK_LEFT)
 			{
-				g_player_go_left = false;
-				g_running_flag = 1;
+				currentKey = 0;
+				playerRanKeyUp(ran_m[0]);
 			}
 			if (event.key.keysym.sym == SDLK_RIGHT)
 			{
-				g_player_go_right = false;
-				g_running_flag = 1;
+				currentKey = 1;
+				playerRanKeyUp(ran_m[1]);
 			}
 			if (event.key.keysym.sym == SDLK_UP)
 			{
-				g_player_go_up = false;
+				currentKey = 2;
+				playerRanKeyUp(ran_m[2]);
 			}
 			if (event.key.keysym.sym == SDLK_DOWN)
 			{
-				g_player_go_down = false;
+				currentKey = 3;
+				playerRanKeyUp(ran_m[3]);
 			}
 
 			break;
@@ -404,17 +472,36 @@ void HandleEvents_Stage3()
 	}
 }
 
+
 void ranMove() {
 	isRan = true;
-	std::cout << "random!" << std::endl;
+
+
+	/*
+	* for(int j = 0; j  < 4; j++)
+		randomNum.push_back(j);
+
 	srand(time(NULL));
 
-	ran_m[0] = rand() % 2;
-	while (ran_m[1] != ran_m[0]) {
-		ran_m[1] = rand() % 2;
+	for (int r = 0; r < 4; r++) {
+		ran_m[r] = rand() % (3 - r);
+		randomNum.erase(randomNum.begin() + ran_m[r], randomNum.begin() + ran_m[r] + 1);
+	}
+	*/
+	int tmp = 0;
+	randomNum = rand() % 4;
+	std::cout << randomNum << std::endl;
+
+	for (int n = randomNum; n < 4; n++) {
+		ran_m[n] = tmp;
+		tmp++;
 	}
 
-	std::cout << ran_m[0] << std::endl;
+	for (int p = 0; p < randomNum; p++) {
+		ran_m[p] = tmp;
+		tmp++;
+	}
+
 	isRan = false;
 }
 
@@ -435,18 +522,22 @@ void Update_Stage3()
 		}
 
 		if (g_elapsed_time_ms - c_last_time > changeCool) {
-			for (int j = 0; j < 3; j++) {
+			for (int j = 0; j < 4; j++) {
 				ran_m[j] = j;
 			}
 		}
 	}
-	else if (!isChange && !isRan) {
+	else if (!isChange && !isRan && !g_player_state[currentKey] && !isJump) {
+		std::cout << "random" << std::endl;
 		isChange = true;
 		c_last_time = g_elapsed_time_ms;
 		ranMove();
+		for (int i = 0; i < 4; i++) {
+			std::cout << i << ": " << ran_m[i] << std::endl;
+		}
 	}
 
-	if (g_player_go_left)
+	if (g_player_state[0])
 	{
 		if ((g_destination_rectangle_player.y == IndextoY(702) - g_player_height && g_destination_rectangle_player.x > IndextoX(641)) ||
 			(g_destination_rectangle_player.y == IndextoY(574) - g_player_height && g_destination_rectangle_player.x > IndextoX(513)) ||
@@ -458,7 +549,7 @@ void Update_Stage3()
 		}
 	}
 
-	if (g_player_go_right)
+	if (g_player_state[1])
 	{
 		if ((g_destination_rectangle_player.y == IndextoY(702) - g_player_height && g_destination_rectangle_player.x < IndextoX(670)) ||
 			(g_destination_rectangle_player.y == IndextoY(574) - g_player_height && g_destination_rectangle_player.x < IndextoX(542)) ||
@@ -470,7 +561,7 @@ void Update_Stage3()
 		}
 	}
 
-	if (g_player_go_up)
+	if (g_player_state[2])
 	{
 		if ((g_destination_rectangle_player.x >= g_destination_rectangle_ladder[0].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[0].x + 5 &&
 			g_destination_rectangle_player.y > g_destination_rectangle_ladder[0].y - g_player_height && g_destination_rectangle_player.y <= IndextoY(688) - g_player_height) ||
@@ -489,7 +580,7 @@ void Update_Stage3()
 			onladder = false;
 	}
 
-	if (g_player_go_down)
+	if (g_player_state[3])
 	{
 		if ((g_destination_rectangle_player.x >= g_destination_rectangle_ladder[0].x - 5 && g_destination_rectangle_player.x <= g_destination_rectangle_ladder[0].x + 5 &&
 			g_destination_rectangle_player.y >= g_destination_rectangle_ladder[0].y - g_player_height && g_destination_rectangle_player.y < IndextoY(688) - g_player_height) ||
@@ -510,9 +601,9 @@ void Update_Stage3()
 
 	if (isJump)
 	{
-		if (g_player_go_left && (g_destination_rectangle_player.x > IndextoX(641)))
+		if (g_player_state[0] && (g_destination_rectangle_player.x > IndextoX(641)))
 			g_destination_rectangle_player.x -= 5;
-		else if (g_player_go_right && (g_destination_rectangle_player.x < IndextoX(670)))
+		else if (g_player_state[1] && (g_destination_rectangle_player.x < IndextoX(670)))
 			g_destination_rectangle_player.x += 5;
 
 		if (power > 0) {
@@ -628,6 +719,33 @@ void Update_Stage3()
 		}
 	}
 
+	for (int i = 0; i < hole.size(); i++) {
+		if ((g_destination_rectangle_player.x == hole[i].x) &&
+			(g_destination_rectangle_player.y + g_destination_rectangle_player.h == hole[i].y))
+		{
+			isFall = true;
+			break;
+		}
+	}
+
+	if (isFall)
+	{
+		g_destination_rectangle_player.y += 10;
+		for (int i = 0; i < ground.size(); i++) {
+			if ((g_destination_rectangle_player.x == ground[i].x) &&
+				(g_destination_rectangle_player.y + g_destination_rectangle_player.h == ground[i].y))
+			{
+				g_player_heart -= 1;
+				g_player_unbeatable = true;
+				isFall = false;
+				break;
+			}
+		}
+	}
+
+	//if (g_player_heart <= 0)
+	//	g_current_game_phase = PHASE_STAGE1;
+
 	srand(time(NULL));
 	if (isMove) {
 		isMove = false;
@@ -636,7 +754,7 @@ void Update_Stage3()
 		b_prevRan_Pos.x = b_destination_rect.x;
 		b_prevRan_Pos.y = b_destination_rect.y;
 
-		ran = rand() % 2;
+		ran = rand() % 4;
 		b_destination_rect.x = ranPos[ran].x;
 		b_destination_rect.y = ranPos[ran].y;
 
@@ -666,6 +784,7 @@ void Update_Stage3()
 	if (checkCollision(b_destination_rect, g_destination_rectangle_pointer)) {
 		isMove = true;
 		hp_B--;
+		bHp_destination_rect.w = 750 * hp_B / 5;
 	}
 	
 
@@ -699,6 +818,11 @@ void Render_Stage3()
 	// link
 	SDL_RenderCopy(g_renderer, g_texture_link, &g_source_rectangle_link, &g_destination_rectangle_link);
 
+	//boss Hp
+	SDL_RenderCopy(g_renderer, g_texture_timeW, &g_source_rectangle_timeW, &g_destination_rectangle_timeW);
+	SDL_RenderCopy(g_renderer, bHp_texture, &bHp_source_rect, &bHp_destination_rect);
+	SDL_RenderCopy(g_renderer, b_sheet_texture, &b_face_source_rect, &b_face_destination_rect);
+
 	// heart
 	g_destination_rectangle_heart = { 650, 75, 25, 25 };
 	int full_heart = g_player_heart / 2;
@@ -725,7 +849,7 @@ void Render_Stage3()
 	}
 
 	//pointer
-	SDL_RenderCopy(g_renderer, g_texture_pointer50, &g_source_rectangle_pointer50, &g_destination_rectangle_pointer50);
+	//SDL_RenderCopy(g_renderer, g_texture_pointer50, &g_source_rectangle_pointer50, &g_destination_rectangle_pointer50);
 
 	r.x = 75;
 	r.y = 75;
@@ -770,23 +894,6 @@ void Render_Stage3()
 			SDL_RenderCopy(g_renderer, g_texture_monster, &g_source_rectangle_monster[3], &g_destination_rectangle_monster);
 	}
 
-	if (isTime) {
-		isDown = true;
-
-		if (b_attackDown_destination.y < 600) {
-			SDL_SetRenderDrawColor(g_renderer, 188, 229, 92, 255);
-
-			for (auto iter = a_position.begin(); iter != a_position.end(); iter++) {
-				b_attackDown_destination.x = iter->x;
-				SDL_RenderFillRect(g_renderer, &b_attackDown_destination);
-			}
-		}
-
-		if (g_elapsed_time_ms - g_last_time_ms > attackCool_Down) {
-			isDown = false;
-		}
-	}
-
 	// player
 	if (g_player_unbeatable) {
 		if (g_unbeatable_flag % 10 == 0) {
@@ -806,7 +913,7 @@ void Render_Stage3()
 		SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[9], &g_destination_rectangle_player);
 	}
 	else {
-		if (g_player_go_right) {
+		if (g_player_state[1]) {
 			if (g_running_flag <= 10) {
 				SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[2], &g_destination_rectangle_player);
 				g_running_flag++;
@@ -818,7 +925,7 @@ void Render_Stage3()
 					g_running_flag = 1;
 			}
 		}
-		else if (g_player_go_left) {
+		else if (g_player_state[0]) {
 			if (g_running_flag <= 10) {
 				SDL_RenderCopy(g_renderer, g_texture_player, &g_source_rectangle_player[6], &g_destination_rectangle_player);
 				g_running_flag++;
@@ -847,6 +954,21 @@ void Render_Stage3()
 	//boss
 	SDL_RenderCopy(g_renderer, b_sheet_texture, &b_source_rect, &b_destination_rect);
 
+	if (isTime) {
+		isDown = true;
+
+		if (b_attackDown_destination.y < 600) {
+			for (auto iter = a_position.begin(); iter != a_position.end(); iter++) {
+				b_attackDown_destination.x = iter->x;
+				SDL_RenderCopy(g_renderer, boxx_attack_texture, &boss_attack_source, &b_attackDown_destination);
+			}
+		}
+
+		if (g_elapsed_time_ms - g_last_time_ms > attackCool_Down) {
+			isDown = false;
+		}
+	}
+
 	SDL_RenderPresent(g_renderer);
 }
 
@@ -855,5 +977,13 @@ void Render_Stage3()
 void Clear_Stage3()
 {
 	SDL_DestroyTexture(g_texture_player);
+	SDL_DestroyTexture(g_texture_ladder);
+	SDL_DestroyTexture(g_texture_monster);
+	SDL_DestroyTexture(g_texture_pointer);
+	SDL_DestroyTexture(g_texture_pointer50);
+	SDL_DestroyTexture(g_texture_heart);
+	SDL_DestroyTexture(g_texture_link);
+	SDL_DestroyTexture(bHp_texture);
+	SDL_DestroyTexture(g_texture_timeW);
 }
 
