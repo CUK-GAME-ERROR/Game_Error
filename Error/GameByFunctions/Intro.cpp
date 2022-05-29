@@ -20,6 +20,7 @@ SDL_Texture* g_title_texture;
 
 // Music
 Mix_Music* g_intro_bg_music;
+Mix_Music* g_bgm_stage1_;
 
 // intro state 
 int intro_state;		// 1 : title & start
@@ -86,6 +87,7 @@ void Init_Intro()
 	g_title_destination_rect.w = 800;
 	g_title_destination_rect.h = 700;
 
+	g_bgm_stage1_ = Mix_LoadMUS("../../Resources/stage1.mp3");
 }
 
 void Update_Intro()
@@ -137,6 +139,7 @@ void HandleEvents_Intro()
 				}
 				else if (intro_state == 3) {
 					Mix_FreeMusic(g_intro_bg_music);
+					Mix_PlayMusic(g_bgm_stage1_, -1);
 					g_current_game_phase = PHASE_STAGE1;
 				}
 			}

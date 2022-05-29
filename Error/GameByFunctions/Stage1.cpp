@@ -626,9 +626,9 @@ void Clear_Stage1()
 	SDL_DestroyTexture(hint_password_);
 	SDL_DestroyTexture(hint_fake_);
 	if(answer_id_texture_)
-	SDL_DestroyTexture(answer_id_texture_);
+		SDL_DestroyTexture(answer_id_texture_);
 	if(answer_password_texture_)
-	SDL_DestroyTexture(answer_password_texture_);
+		SDL_DestroyTexture(answer_password_texture_);
 	SDL_DestroyTexture(typing_);
 	SDL_DestroyTexture(intro_stage1_);
 	Mix_FreeMusic(g_bgm_stage2);
