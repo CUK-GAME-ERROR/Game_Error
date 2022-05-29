@@ -80,7 +80,7 @@ void Init_Stage1()
 	alpha = 255;
 	lup_ = true;
 	rup_ = true;
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 6; i++)
 		interact[i] = false;
 	typing = false;
 	get_intro_ = true;
@@ -240,14 +240,16 @@ void Reset_Stage1()
 	alpha = 255;
 	lup_ = true;
 	rup_ = true;
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 6; i++)
 		interact[i] = false;
 	typing = false;
 	character_destination_rectangle_stage1_.x = 200;
 	character_destination_rectangle_stage1_.y = 400;
-	answer_id_ = "";
-	answer_password_ = "";
+	answer_id_=answer_id_.erase();
+	answer_password_=answer_password_.erase();
 	get_intro_ = true;
+	SDL_SetTextureAlphaMod(character_stage1_, alpha);
+	SDL_StartTextInput();
 }
 
 void Update_Stage1()
