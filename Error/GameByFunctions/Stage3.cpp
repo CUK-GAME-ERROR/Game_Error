@@ -2,6 +2,10 @@
 #include "Stage3.h"
 #include "player.h"
 
+SDL_Texture* g_texture_stage3Intro;
+SDL_Rect g_source_rectangle_stage3Intro;
+SDL_Rect g_destination_rectangle_stage3Intro;
+bool read_intro;
 
 //player
 int move_state;
@@ -18,7 +22,7 @@ int hp_P;
 static int g_player_height;
 static int g_player_head; // 0:right, 1:left, 2: front
 static int g_running_flag; // 1~10, 11~20
-static int g_player_heart; // 1 heart = 2 g_player_heart
+//static int g_player_heart; // 1 heart = 2 g_player_heart
 static bool g_player_unbeatable;
 static int g_unbeatable_flag;
 
@@ -49,6 +53,7 @@ std::list<Pos> a_position;
 bool isDown;
 bool isTime;
 bool isMove;
+bool isEffect;
 
 SDL_Rect b_face_source_rect;
 SDL_Rect b_face_destination_rect;
@@ -63,6 +68,7 @@ bool isRan; //랜덤 한번만 실행
 float changeCool; //바뀐 방향키 유지 쿨타임
 float randCool; //발동 쿨타임
 int currentKey;
+bool isWarn;
 
 
 
@@ -88,6 +94,13 @@ static SDL_Texture* g_texture_monster;
 static SDL_Rect g_source_rectangle_monster[4];
 static SDL_Rect g_destination_rectangle_monster;
 static int g_monster_size;
+
+bool isGone_A;
+bool isGone_B;
+bool isOnce_A;
+bool isOnce_B;
+int monsterA_waiting;
+int monsterB_waiting;
 
 
 //map
@@ -141,9 +154,79 @@ SDL_Texture* boxx_attack_texture;
 SDL_Rect boss_attack_source;
 SDL_Rect boss_attack_destination;
 
+//sound
+static Mix_Chunk* g_shooting_sound;
+static Mix_Chunk* g_hit_sound;
+static Mix_Chunk* g_attack_sound;
+static Mix_Chunk* g_failure_sound;
+static Mix_Chunk* b_attack_sound;
+static Mix_Chunk* interact_sound_;
+
+static Mix_Music* g_bgm_ending;
+
+//font
+TTF_Font* font;
+SDL_Color red;
+SDL_Texture* warnChange;
+SDL_Rect warn_source;
+
+void Reset_Stage3() {
+	g_flag_running = true;
+	g_elapsed_time_ms = 0;
+
+	g_destination_rectangle_player.x = IndextoX(670);
+	g_destination_rectangle_player.y = IndextoY(702) - g_player_height;
+
+	for (int i = 0; i < 4; i++)
+		g_player_state[i] = false;
+
+	isJump = false;
+	isFall = false;
+	isShot = false;
+	onladder = false;
+	g_player_unbeatable = false;
+	g_player_heart = 2;
+	g_player_head = 1;
+	g_running_flag = 1;
+
+	read_intro = false;
+
+	for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++)
+		iter->isAlive = true;
+	for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++)
+		iter->isAlive = true;
+}
+
+void responeMonster(bool isA) {
+	if (isA) {
+		for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++) {
+			iter->isAlive = true;
+		}
+		isOnce_A = false;
+	}
+	else {
+		for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++) {
+			iter->isAlive = true;
+		}
+		isOnce_B = false;
+	}
+}
+
 
 void Init_Stage3()
 {
+	// intro
+	SDL_Surface* stage3Intro_surface = IMG_Load("../../Resources/stage3_intro.png");
+	g_texture_stage3Intro = SDL_CreateTextureFromSurface(g_renderer, stage3Intro_surface);
+	SDL_FreeSurface(stage3Intro_surface);
+
+	SDL_QueryTexture(g_texture_stage3Intro, NULL, NULL, &g_source_rectangle_stage3Intro.w, &g_source_rectangle_stage3Intro.h);
+	g_source_rectangle_stage3Intro.x = 0;
+	g_source_rectangle_stage3Intro.y = 0;
+	g_destination_rectangle_stage3Intro = { 100, 100, 600, 500 };
+
+	read_intro = false;
+
 	//map
 	map_stage3 = Init_Map();
 	ground = Init_Ground();
@@ -158,21 +241,15 @@ void Init_Stage3()
 	boxx_attack_texture = SDL_CreateTextureFromSurface(g_renderer, boss_attack_surface);
 	SDL_FreeSurface(boss_attack_surface);
 
-	boss_attack_source.x = 72;
-	boss_attack_source.y = 2;
-	boss_attack_source.w = 102;
-	boss_attack_source.h = 192;
+	boss_attack_source.x = 529;
+	boss_attack_source.y = 139;
+	boss_attack_source.w = 112;
+	boss_attack_source.h = 274;
 
 	b_attackDown_destination.x = 51;
 	b_attackDown_destination.y = 184;
 	b_attackDown_destination.w = 50;
-	b_attackDown_destination.h = 50;
-
-	/*b_attackDown_rect.x = 51;
-	b_attackDown_rect.y = 184;
-	b_attackDown_rect.w = 50;
-	b_attackDown_rect.h = 50;
-	*/
+	b_attackDown_destination.h = 60;
 
 	for (int i = 0; i < 4; i++) {
 		a_position.push_back(Pos(b_attackDown_destination.x, b_attackDown_destination.y));
@@ -198,10 +275,11 @@ void Init_Stage3()
 	power = 40;
 	jumpSpeed = 5;
 	Power = power;
+	isChange = true;
 
 	g_player_head = 1;
 	g_running_flag = 1;
-	g_player_heart = 4;
+	//g_player_heart = 4;
 	g_player_unbeatable = false;
 
 	SDL_Surface* boss_sheet_surface = IMG_Load("../../Resources/boss.png");
@@ -338,9 +416,39 @@ void Init_Stage3()
 	g_destination_rectangle_timeW.y = 25;
 	g_destination_rectangle_timeW.w = 750;
 	g_destination_rectangle_timeW.h = 25;
+
+	//sound
+	g_bgm_ending = Mix_LoadMUS("../../Resources/gameClear.mp3");
+
+	g_shooting_sound = Mix_LoadWAV("../../Resources/shooting.mp3");
+	g_hit_sound = Mix_LoadWAV("../../Resources/hit.wav");
+	g_attack_sound = Mix_LoadWAV("../../Resources/attack.mp3");
+	interact_sound_ = Mix_LoadWAV("../../Resources/interact.wav");
+	g_failure_sound = Mix_LoadWAV("../../Resources/failure.mp3");
+	Mix_VolumeChunk(g_failure_sound, 50);
+	b_attack_sound = Mix_LoadWAV("../../Resources/lightning.mp3");
+	Mix_VolumeChunk(b_attack_sound, 30);
+
+	// text
+	font = TTF_OpenFont("../../Resources/DungGeunMo.ttf", 50);
+	red = { 255, 0, 0, 255 };
+	SDL_Surface* tmp_surface = TTF_RenderText_Blended(font, "Warning: left <-> right / up <-> down", red);
+	
+	warn_source.x = 0;
+	warn_source.y = 0;
+	warn_source.w = tmp_surface->w;
+	warn_source.h = tmp_surface->h;
+
+	warnChange = SDL_CreateTextureFromSurface(g_renderer, tmp_surface);
+	SDL_FreeSurface(tmp_surface);
+	TTF_CloseFont(font);
 }
 
 void playerRanKeyDown(int move_state) {
+	for (int i = 0; i < 4; i++) {
+		g_player_state[i] = false;
+	}
+
 	switch (move_state) {
 	case 0:
 		g_player_state[0] = true;
@@ -392,42 +500,52 @@ void HandleEvents_Stage3()
 			g_flag_running = false;
 			break;
 		case SDL_KEYDOWN:
-			if (event.key.keysym.sym == SDLK_LEFT)
-			{
-				playerRanKeyDown(ran_m[0]);
-			}
-			else if (event.key.keysym.sym == SDLK_RIGHT)
-			{
-				std::cout << "KeyDown" << std::endl;
-				for (int i = 0; i < 4; i++) {
-					std::cout << i << ": " << ran_m[i] << std::endl;
+			if (!isFall && read_intro) {
+				if (event.key.keysym.sym == SDLK_LEFT)
+				{
+					playerRanKeyDown(ran_m[0]);
 				}
-				playerRanKeyDown(ran_m[1]);
-			}
-			else if (event.key.keysym.sym == SDLK_UP)
-			{
-				playerRanKeyDown(ran_m[2]);
-			}
-			else if (event.key.keysym.sym == SDLK_DOWN)
-			{
-				playerRanKeyDown(ran_m[3]);
-			}
+				else if (event.key.keysym.sym == SDLK_RIGHT)
+				{
+					std::cout << "KeyDown" << std::endl;
+					for (int i = 0; i < 4; i++) {
+						std::cout << i << ": " << ran_m[i] << std::endl;
+					}
+					playerRanKeyDown(ran_m[1]);
+				}
+				else if (event.key.keysym.sym == SDLK_UP)
+				{
+					playerRanKeyDown(ran_m[2]);
+				}
+				else if (event.key.keysym.sym == SDLK_DOWN)
+				{
+					playerRanKeyDown(ran_m[3]);
+				}
 
-			if (event.key.keysym.sym == SDLK_SPACE)
-			{
-				if (!onladder)
-					isJump = true;
-			}
+				if (event.key.keysym.sym == SDLK_SPACE)
+				{
+					if (!onladder)
+						isJump = true;
+				}
 
-			if (event.key.keysym.sym == SDLK_z) {
-				if (!onladder && !isShot && !(g_player_head == 2) && pointer_num != 0) {
-					isShot = true;
-					g_destination_rectangle_pointer.x = g_destination_rectangle_player.x;
-					g_destination_rectangle_pointer.y = g_destination_rectangle_player.y;
-					pointer_Pos.x = g_destination_rectangle_pointer.x;
-					pointer_Pos.y = g_destination_rectangle_pointer.y;
-					pointer_head = g_player_head;
-					pointer_num--;
+				if (event.key.keysym.sym == SDLK_z) {
+					if (!onladder && !isShot && !(g_player_head == 2)) {
+						Mix_PlayChannel(-1, g_shooting_sound, 0);
+						isShot = true;
+						g_destination_rectangle_pointer.x = g_destination_rectangle_player.x;
+						g_destination_rectangle_pointer.y = g_destination_rectangle_player.y;
+						pointer_Pos.x = g_destination_rectangle_pointer.x;
+						pointer_Pos.y = g_destination_rectangle_pointer.y;
+						pointer_head = g_player_head;
+					}
+				}
+
+				if (event.key.keysym.sym == SDLK_n)
+				{
+					Reset_Stage3();
+					g_current_game_phase = PHASE_ENDING;
+					g_game_ending = 1;
+					Mix_PlayMusic(g_bgm_ending, -1);
 				}
 			}
 
@@ -462,7 +580,10 @@ void HandleEvents_Stage3()
 			
 			if (event.button.button == SDL_BUTTON_LEFT)
 			{
-				g_current_game_phase = PHASE_STAGE2;
+				if (!read_intro) {
+					Mix_PlayChannel(-1, interact_sound_, 0);
+					read_intro = true;
+				}
 			}
 			break;
 
@@ -476,31 +597,10 @@ void HandleEvents_Stage3()
 void ranMove() {
 	isRan = true;
 
-
-	/*
-	* for(int j = 0; j  < 4; j++)
-		randomNum.push_back(j);
-
-	srand(time(NULL));
-
-	for (int r = 0; r < 4; r++) {
-		ran_m[r] = rand() % (3 - r);
-		randomNum.erase(randomNum.begin() + ran_m[r], randomNum.begin() + ran_m[r] + 1);
-	}
-	*/
-	int tmp = 0;
-	randomNum = rand() % 4;
-	std::cout << randomNum << std::endl;
-
-	for (int n = randomNum; n < 4; n++) {
-		ran_m[n] = tmp;
-		tmp++;
-	}
-
-	for (int p = 0; p < randomNum; p++) {
-		ran_m[p] = tmp;
-		tmp++;
-	}
+	ran_m[0] = 1;
+	ran_m[1] = 0;
+	ran_m[2] = 3;
+	ran_m[3] = 2;
 
 	isRan = false;
 }
@@ -508,6 +608,10 @@ void ranMove() {
 void Update_Stage3()
 {
 	if (isDown) {
+		if (!isEffect && read_intro) {
+			isEffect = true;
+			//Mix_PlayChannel(-1, b_attack_sound, 0);
+		}
 		b_attackDown_destination.y += 10;
 	}
 	else if (!isDown) {
@@ -525,17 +629,54 @@ void Update_Stage3()
 			for (int j = 0; j < 4; j++) {
 				ran_m[j] = j;
 			}
+			isWarn = false;
 		}
 	}
-	else if (!isChange && !isRan && !g_player_state[currentKey] && !isJump) {
-		std::cout << "random" << std::endl;
+	else if (!isChange && !isRan && !isJump && read_intro) {
 		isChange = true;
+		isWarn = true;
 		c_last_time = g_elapsed_time_ms;
 		ranMove();
-		for (int i = 0; i < 4; i++) {
-			std::cout << i << ": " << ran_m[i] << std::endl;
+	}
+
+	for (auto iter = monsterA.begin(); iter != monsterA.end(); iter++) {
+		if (iter->isAlive) {
+			isGone_A = false;
+			break;
+		}
+
+		isGone_A = true;
+	}
+
+	if (isGone_A) {
+		if (!isOnce_A) {
+			isOnce_A = true;
+			monsterA_waiting = g_elapsed_time_ms;
+		}
+		if(g_elapsed_time_ms- monsterA_waiting > 2000)
+			responeMonster(true);
+	}
+
+	for (auto iter = monsterB.begin(); iter != monsterB.end(); iter++) {
+		if (iter->isAlive) {
+			isGone_B = false;
+			break;
+		}
+
+		isGone_B = true;
+	}
+
+	if (isGone_B) {
+		if (!isOnce_B) {
+			isOnce_B= true;
+			monsterB_waiting = g_elapsed_time_ms;
+		}
+		if (g_elapsed_time_ms - monsterB_waiting > 2000) {
+			responeMonster(false);
 		}
 	}
+	
+
 
 	if (g_player_state[0])
 	{
@@ -654,6 +795,7 @@ void Update_Stage3()
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
 			g_player_heart -= 2;
+			Mix_PlayChannel(-1, g_attack_sound, 0);
 			g_player_unbeatable = true;
 			break;
 		}
@@ -673,6 +815,7 @@ void Update_Stage3()
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
 			g_player_heart -= 2;
+			Mix_PlayChannel(-1, g_attack_sound, 0);
 			g_player_unbeatable = true;
 			break;
 		}
@@ -692,6 +835,7 @@ void Update_Stage3()
 				(top > g_destination_rectangle_pointer.y + 25) ||
 				(right < g_destination_rectangle_pointer.x) ||
 				(left > g_destination_rectangle_pointer.x + 25))) {
+				Mix_PlayChannel(-1, g_hit_sound, 0);
 				iter->isAlive = false;
 				isShot = false;
 				break;
@@ -712,6 +856,7 @@ void Update_Stage3()
 				(top > g_destination_rectangle_pointer.y + 25) ||
 				(right < g_destination_rectangle_pointer.x) ||
 				(left > g_destination_rectangle_pointer.x + 25))) {
+				Mix_PlayChannel(-1, g_hit_sound, 0);
 				iter->isAlive = false;
 				isShot = false;
 				break;
@@ -735,6 +880,7 @@ void Update_Stage3()
 			if ((g_destination_rectangle_player.x == ground[i].x) &&
 				(g_destination_rectangle_player.y + g_destination_rectangle_player.h == ground[i].y))
 			{
+				Mix_PlayChannel(-1, g_attack_sound, 0);
 				g_player_heart -= 1;
 				g_player_unbeatable = true;
 				isFall = false;
@@ -743,8 +889,13 @@ void Update_Stage3()
 		}
 	}
 
-	//if (g_player_heart <= 0)
-	//	g_current_game_phase = PHASE_STAGE1;
+	if (g_player_heart <= 0) {
+		g_game_ending = 0;
+		g_current_game_phase = PHASE_ENDING;
+		Mix_HaltMusic();
+		Mix_PlayChannel(-1, g_failure_sound, 0);
+		Reset_Stage3();
+	}
 
 	srand(time(NULL));
 	if (isMove) {
@@ -774,8 +925,11 @@ void Update_Stage3()
 	for (auto iter = a_position.begin(); iter != a_position.end(); iter++) {
 		b_attackDown_rect.x = iter->x;
 		b_attackDown_rect.y = b_attackDown_destination.y;
+		b_attackDown_rect.w = b_attackDown_destination.w;
+		b_attackDown_rect.w = b_attackDown_destination.h;
 
 		if (checkCollision(g_destination_rectangle_player, b_attackDown_rect) && g_player_unbeatable == false) {
+			Mix_PlayChannel(-1, g_hit_sound, 0);
 			g_player_heart -= 2;
 			g_player_unbeatable = true;
 		}
@@ -785,6 +939,13 @@ void Update_Stage3()
 		isMove = true;
 		hp_B--;
 		bHp_destination_rect.w = 750 * hp_B / 5;
+	}
+
+	if (hp_B == 0) {
+		Reset_Stage3();
+		g_current_game_phase = PHASE_ENDING;
+		g_game_ending = 1;
+		Mix_PlayMusic(g_bgm_ending, -1);
 	}
 	
 
@@ -848,14 +1009,17 @@ void Render_Stage3()
 		}
 	}
 
+	//random Move Player
+	SDL_Rect warning_ran;
+	warning_ran.x = 100;
+	warning_ran.y = 100;
+	warning_ran.w = warn_source.w / 2;
+	warning_ran.h = warn_source.h / 2;
+	if(isWarn)
+		SDL_RenderCopy(g_renderer, warnChange, &warn_source, &warning_ran);
+
 	//pointer
 	//SDL_RenderCopy(g_renderer, g_texture_pointer50, &g_source_rectangle_pointer50, &g_destination_rectangle_pointer50);
-
-	r.x = 75;
-	r.y = 75;
-	r.w = pointerNum_rect.w;
-	r.h = pointerNum_rect.h;
-	SDL_RenderCopy(g_renderer, pointerNum_text, &pointerNum_rect, &r);
 
 	if (isShot) {
 		if (pointer_head == 0)
@@ -967,7 +1131,14 @@ void Render_Stage3()
 		if (g_elapsed_time_ms - g_last_time_ms > attackCool_Down) {
 			isDown = false;
 		}
+		else if (g_elapsed_time_ms - g_last_time_ms > attackCool_Down - 1000) {
+			isEffect = false;
+		}
 	}
+
+	// intro
+	if (!read_intro)
+		SDL_RenderCopy(g_renderer, g_texture_stage3Intro, &g_source_rectangle_stage3Intro, &g_destination_rectangle_stage3Intro);
 
 	SDL_RenderPresent(g_renderer);
 }
@@ -985,5 +1156,10 @@ void Clear_Stage3()
 	SDL_DestroyTexture(g_texture_link);
 	SDL_DestroyTexture(bHp_texture);
 	SDL_DestroyTexture(g_texture_timeW);
+	Mix_FreeChunk(g_shooting_sound);
+	Mix_FreeChunk(g_hit_sound);
+	Mix_FreeChunk(g_attack_sound);
+	Mix_FreeChunk(g_failure_sound);
+	Mix_FreeMusic(g_bgm_ending);
 }
 
