@@ -179,15 +179,21 @@ void Reset_Stage3() {
 
 	for (int i = 0; i < 4; i++)
 		g_player_state[i] = false;
+	for (int k = 0; k < 4; k++)
+		ran_m[k] = k;
 
 	isJump = false;
 	isFall = false;
 	isShot = false;
 	onladder = false;
+	isWarn = false;
+
 	g_player_unbeatable = false;
-	g_player_heart = 2;
+	g_player_heart = 4;
 	g_player_head = 1;
 	g_running_flag = 1;
+	hp_B = 5;
+	bHp_destination_rect.w = 750;
 
 	read_intro = false;
 
@@ -597,6 +603,10 @@ void HandleEvents_Stage3()
 void ranMove() {
 	isRan = true;
 
+	for (int i = 0; i < 4; i++) {
+		g_player_state[i] = false;
+	}
+
 	ran_m[0] = 1;
 	ran_m[1] = 0;
 	ran_m[2] = 3;
@@ -632,7 +642,7 @@ void Update_Stage3()
 			isWarn = false;
 		}
 	}
-	else if (!isChange && !isRan && !isJump && read_intro) {
+	else if (!isChange && !isRan && !isJump && read_intro && !g_player_state[currentKey]) {
 		isChange = true;
 		isWarn = true;
 		c_last_time = g_elapsed_time_ms;
@@ -794,7 +804,7 @@ void Update_Stage3()
 			(right < g_destination_rectangle_player.x) ||
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
-			g_player_heart -= 2;
+			//g_player_heart -= 2;
 			Mix_PlayChannel(-1, g_attack_sound, 0);
 			g_player_unbeatable = true;
 			break;
@@ -814,7 +824,7 @@ void Update_Stage3()
 			(right < g_destination_rectangle_player.x) ||
 			(left > g_destination_rectangle_player.x + 25)) &&
 			g_player_unbeatable == false) {
-			g_player_heart -= 2;
+			//g_player_heart -= 2;
 			Mix_PlayChannel(-1, g_attack_sound, 0);
 			g_player_unbeatable = true;
 			break;
@@ -881,7 +891,7 @@ void Update_Stage3()
 				(g_destination_rectangle_player.y + g_destination_rectangle_player.h == ground[i].y))
 			{
 				Mix_PlayChannel(-1, g_attack_sound, 0);
-				g_player_heart -= 1;
+				//g_player_heart -= 1;
 				g_player_unbeatable = true;
 				isFall = false;
 				break;
@@ -929,7 +939,7 @@ void Update_Stage3()
 		b_attackDown_rect.w = b_attackDown_destination.h;
 
 		if (checkCollision(g_destination_rectangle_player, b_attackDown_rect) && g_player_unbeatable == false) {
-			Mix_PlayChannel(-1, g_hit_sound, 0);
+			Mix_PlayChannel(-1, g_attack_sound, 0);
 			g_player_heart -= 2;
 			g_player_unbeatable = true;
 		}
