@@ -531,10 +531,11 @@ void Update_Stage2()
 			g_player_heart -= 2;
 			Mix_PlayChannel(-1, g_attack_sound, 0);
 			if (g_player_heart <= 0) {
-				Reset_Stage2();
 				g_game_ending = 0;
 				g_current_game_phase = PHASE_ENDING;
+				Mix_HaltMusic();
 				Mix_PlayChannel(-1, g_failure_sound, 0);
+				Reset_Stage2();
 			}
 			g_player_unbeatable = true;
 			break;
@@ -557,10 +558,11 @@ void Update_Stage2()
 			g_player_heart -= 2;
 			Mix_PlayChannel(-1, g_attack_sound, 0);
 			if (g_player_heart <= 0) {
-				Reset_Stage2();
 				g_game_ending = 0;
 				g_current_game_phase = PHASE_ENDING;
+				Mix_HaltMusic();
 				Mix_PlayChannel(-1, g_failure_sound, 0);
+				Reset_Stage2();
 			}
 			g_player_unbeatable = true;
 			break;
@@ -629,10 +631,11 @@ void Update_Stage2()
 				g_player_heart -= 1;
 				Mix_PlayChannel(-1, g_attack_sound, 0);
 				if (g_player_heart <= 0) {
-					Reset_Stage2();
 					g_game_ending = 0;
 					g_current_game_phase = PHASE_ENDING;
+					Mix_HaltMusic();
 					Mix_PlayChannel(-1, g_failure_sound, 0);
+					Reset_Stage2();
 				}
 				g_player_unbeatable = true;
 				isFall = false;
