@@ -13,20 +13,11 @@ SDL_Rect g_fail_source_rect;
 SDL_Rect g_fail_destination_rect;
 SDL_Texture* g_fail_texture;
 
-// success music
-Mix_Music* g_success_bg_music;
-
-// failure chunk
-Mix_Chunk* g_fail_chunk;
-
-
+// Music
+static Mix_Music* g_bgm_stage1;
 
 void Init_Ending()
 {
-	g_fail_chunk = Mix_LoadWAV("../../Resources/failure.MP3");
-	g_success_bg_music = Mix_LoadMUS("../../Resources/bgm2.mp3");
-
-
 	// sucess
 	SDL_Surface* success_surface = IMG_Load("../../Resources/gameclear.png");
 	g_success_texture = SDL_CreateTextureFromSurface(g_renderer, success_surface);
@@ -59,6 +50,7 @@ void Init_Ending()
 	g_fail_destination_rect.w = 800;
 	g_fail_destination_rect.h = 700;
 
+	g_bgm_stage1 = Mix_LoadMUS("../../Resources/stage1.mp3");
 }
 
 void Update_Ending()
@@ -96,7 +88,8 @@ void HandleEvents_Ending()
 			// If the mouse left button is pressed. 
 			if ( event.button.button == SDL_BUTTON_LEFT )
 			{
-				g_current_game_phase = PHASE_INTRO;
+				g_current_game_phase = PHASE_STAGE1;
+				Mix_PlayMusic(g_bgm_stage1, -1);
 			}
 			break;
 
@@ -111,6 +104,5 @@ void Clear_Ending()
 {
 	SDL_DestroyTexture(g_success_texture);
 	SDL_DestroyTexture(g_fail_texture);
-	Mix_FreeMusic(g_success_bg_music);
-	Mix_FreeChunk(g_fail_chunk);
+	Mix_FreeMusic(g_bgm_stage1);
 }

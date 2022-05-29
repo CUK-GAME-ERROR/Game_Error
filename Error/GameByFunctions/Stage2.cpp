@@ -800,9 +800,9 @@ void Render_Stage2()
 
 	if (g_destination_rectangle_timeG.w == 0)
 	{
-		Reset_Stage2();
 		Mix_PlayMusic(g_bgm_stage3, -1);
 		g_current_game_phase = PHASE_STAGE3;
+		Reset_Stage2();
 	}
 
 	// link
@@ -903,9 +903,9 @@ void HandleEvents_Stage2()
 
 				if (event.key.keysym.sym == SDLK_n)
 				{
-					Reset_Stage2();
 					g_current_game_phase = PHASE_STAGE3;
 					Mix_PlayMusic(g_bgm_stage3, -1);
+					Reset_Stage2();
 				}
 			}
 			break;
